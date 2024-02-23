@@ -13,7 +13,8 @@ defmodule Search.Application do
       {DNSCluster, query: Application.get_env(:search, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: Search.PubSub},
       # Start a worker by calling: Search.Worker.start_link(arg)
-      # {Search.Worker, arg},
+      {Search.Embedding, name: Search.Embedding},
+      {Search.Embedding.Serving, name: Search.Embedding.Serving},
       # Start to serve requests, typically the last entry
       SearchWeb.Endpoint
     ]

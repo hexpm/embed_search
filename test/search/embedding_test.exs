@@ -18,8 +18,6 @@ defmodule Search.EmbeddingTest do
         "Lorem ipsum dolor sit amet"
       ])
 
-
-
     assert {Embedding.embedding_size()} == Nx.shape(embedding1)
     assert {Embedding.embedding_size()} == Nx.shape(embedding2)
   end

@@ -14,7 +14,6 @@ defmodule Search.Application do
       {Phoenix.PubSub, name: Search.PubSub},
       # Start a worker by calling: Search.Worker.start_link(arg)
       {Search.Embedding, name: Search.Embedding},
-      {Search.Embedding.Serving, name: Search.Embedding.Serving},
       # Start to serve requests, typically the last entry
       SearchWeb.Endpoint
     ]

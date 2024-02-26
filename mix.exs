@@ -56,8 +56,9 @@ defmodule Search.MixProject do
       {:dns_cluster, "~> 0.1.1"},
       {:bandit, "~> 1.2"},
       {:pgvector, "~> 0.2.0"},
-      {:bumblebee, "~> 0.4.2"},
-      {:exla, ">= 0.0.0"}
+      {:bumblebee, "~> 0.5.2"},
+      {:xla, "~> 0.6.0"},
+      {:exla, "~> 0.7.0"}
     ]
   end
 

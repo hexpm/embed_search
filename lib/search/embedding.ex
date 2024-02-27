@@ -1,8 +1,10 @@
 defmodule Search.Embedding do
+  @moduledoc """
+  Provides text embedding capabilities. Currently uses Bumblebee with Sentence Transformers paraphrase L3 model
+  """
+
   @embedding_size 384
   @model_repo {:hf, "sentence-transformers/paraphrase-MiniLM-L3-v2"}
-
-  require Logger
 
   def embedding_size, do: @embedding_size
 

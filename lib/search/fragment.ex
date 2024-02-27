@@ -1,4 +1,9 @@
 defmodule Search.Fragment do
+  @moduledoc """
+  Context for indexed documentation fragments - each fragment has associated with it an embedding vector, upon which
+  kNN lookup can be performed.
+  """
+
   alias Search.{Fragment, Repo}
   use Ecto.Schema
   import Ecto.{Changeset, Query}
@@ -21,19 +26,20 @@ defmodule Search.Fragment do
     metric = opts[:metric]
     k = opts[:k]
 
-    query = case metric do
-      :cosine ->
-        from f in Fragment,
-          order_by: cosine_distance(f.embedding, ^query_tensor),
-          limit: ^k,
-          select: f
+    query =
+      case metric do
+        :cosine ->
+          from f in Fragment,
+            order_by: cosine_distance(f.embedding, ^query_tensor),
+            limit: ^k,
+            select: f
 
-      :l2 ->
-        from f in Fragment,
-          order_by: l2_distance(f.embedding, ^query_tensor),
-          limit: ^k,
-          select: f
-    end
+        :l2 ->
+          from f in Fragment,
+            order_by: l2_distance(f.embedding, ^query_tensor),
+            limit: ^k,
+            select: f
+      end
 
     Repo.all(query)
   end

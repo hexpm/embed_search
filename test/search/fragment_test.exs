@@ -1,5 +1,5 @@
 defmodule Search.FragmentTest do
-  use Search.DataCase
+  use Search.DataCase, async: true
 
   alias Search.{Fragment, Embedding}
 

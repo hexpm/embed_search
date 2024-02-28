@@ -58,7 +58,8 @@ defmodule Search.MixProject do
       {:pgvector, "~> 0.2.0"},
       {:bumblebee, "~> 0.5.2"},
       {:xla, "~> 0.6.0"},
-      {:exla, "~> 0.7.0"}
+      {:exla, "~> 0.7.0"},
+      {:json, "~> 1.4"}
     ]
   end
 

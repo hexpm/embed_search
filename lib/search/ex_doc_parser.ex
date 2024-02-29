@@ -4,6 +4,8 @@ defmodule Search.ExDocParser do
   ExDoc-generated documentation page
   """
 
+  @search_data_regex ~r/dist\/search_data-[0-9A-F]{8}\.js/
+
   def get_documentation(file_or_binary \\ []) do
     %{file: file, binary: binary} =
       file_or_binary
@@ -24,7 +26,7 @@ defmodule Search.ExDocParser do
       {:ok, search_data} ->
         search_data =
           Enum.find(search_data, fn {maybe_search_data, _} ->
-            List.starts_with?(maybe_search_data, ~c"dist/search_data")
+            maybe_search_data |> to_string() |> String.match?(@search_data_regex)
           end)
 
         if is_nil(search_data) do

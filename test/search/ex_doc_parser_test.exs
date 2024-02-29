@@ -22,20 +22,20 @@ defmodule Search.ExDocParserTest do
       with_prefix_no_items_key =
         "searchData=#{no_items_key}"
 
-      no_items_key_tar = make_targz(tmp_dir, no_items_key, "dist/search_data-ABCDEF.js")
-      with_items_key_tar = make_targz(tmp_dir, with_items_key, "dist/search_data-ABCDEF.js")
+      no_items_key_tar = make_targz(tmp_dir, no_items_key, "dist/search_data-12ABCDEF.js")
+      with_items_key_tar = make_targz(tmp_dir, with_items_key, "dist/search_data-12ABCDEF.js")
 
       with_prefix_with_items_key_tar =
-        make_targz(tmp_dir, with_prefix_with_items_key, "dist/search_data-ABCDEF.js")
+        make_targz(tmp_dir, with_prefix_with_items_key, "dist/search_data-12ABCDEF.js")
 
       with_prefix_no_items_key_tar =
-        make_targz(tmp_dir, with_prefix_no_items_key, "dist/search_data-ABCDEF.js")
+        make_targz(tmp_dir, with_prefix_no_items_key, "dist/search_data-12ABCDEF.js")
 
       no_search_data =
-        make_targz(tmp_dir, with_prefix_with_items_key, "dist/not_search_data-ABCDEF.js")
+        make_targz(tmp_dir, with_prefix_with_items_key, "dist/not_search_data-12ABCDEF.js")
 
       invalid_json =
-        make_targz(tmp_dir, "searchData=#{@invalid_json}", "dist/search_data-ABCDEF.js")
+        make_targz(tmp_dir, "searchData=#{@invalid_json}", "dist/search_data-12ABCDEF.js")
 
       {:ok,
        %{
@@ -102,7 +102,7 @@ defmodule Search.ExDocParserTest do
     end
 
     @tag :tmp_dir
-    test "should fail for archives with no `dist/search_data*` files", %{wrong_format: file} do
+    test "should fail for archives with no dist/search_data-XXXXXXXX.js files", %{wrong_format: file} do
       file = File.open!(file, [:compressed, :binary])
 
       assert {:error,
@@ -150,7 +150,7 @@ defmodule Search.ExDocParserTest do
   defp make_targz(tmp, search_data, name_in_archive) do
     filename =
       :crypto.hash(:md5, search_data <> name_in_archive)
-      |> Base.encode64(padding: false)
+      |> Base.encode16(padding: false)
 
     filename = "#{filename}.tar.gz"
 

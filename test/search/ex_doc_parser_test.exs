@@ -1,5 +1,5 @@
 defmodule Search.ExDocParserTest do
-  alias Search.ExDocParser
+  alias Search.{ExDocParser, TestHelpers}
   use ExUnit.Case, async: true
 
   @dummy_items [%{"doc" => "dummy doc"}, %{"doc" => "another dummy"}]
@@ -17,7 +17,7 @@ defmodule Search.ExDocParserTest do
       search_data_path = "dist/search_data-12ABCDEF.js"
 
       test_tar =
-        make_targz(tmp_dir, search_data_content, search_data_path)
+        TestHelpers.make_targz(tmp_dir, search_data_content, search_data_path)
 
       {:ok,
        %{
@@ -127,21 +127,5 @@ defmodule Search.ExDocParserTest do
       assert {:error, "Search data content does not contain the key \"items\""} ==
                ExDocParser.extract_search_data(untar)
     end
-  end
-
-  defp make_targz(tmp, search_data, name_in_archive) do
-    filename =
-      :crypto.hash(:md5, search_data <> name_in_archive)
-      |> Base.encode16(padding: false)
-
-    filename = "#{filename}.tar.gz"
-
-    path = Path.join(tmp, filename)
-
-    {:ok, tarball} = :erl_tar.open(path, [:write, :compressed])
-    :ok = :erl_tar.add(tarball, {to_charlist(name_in_archive), search_data}, [])
-    :ok = :erl_tar.close(tarball)
-
-    path
   end
 end

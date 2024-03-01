@@ -29,23 +29,21 @@ defmodule Search.HexClient do
   end
 
   defp map_json_to_releases(package_name, [head | tail] = _releases_json, acc, collect_fn) do
-    with %{"has_docs" => has_docs, "version" => version} <- head do
-      case Version.parse(version) do
-        {:ok, version} ->
-          release = %HexClient.Release{
-            package_name: package_name,
-            version: version,
-            has_docs: has_docs
-          }
+    with %{"has_docs" => has_docs, "version" => version} <- head,
+         {:ok, version} <- Version.parse(version) do
+      release = %HexClient.Release{
+        package_name: package_name,
+        version: version,
+        has_docs: has_docs
+      }
 
-          acc = collect_fn.(acc, {:cont, release})
-          map_json_to_releases(package_name, tail, acc, collect_fn)
-
-        err ->
-          collect_fn.(acc, :halt)
-          err
-      end
+      acc = collect_fn.(acc, {:cont, release})
+      map_json_to_releases(package_name, tail, acc, collect_fn)
     else
+      {:error, _} = err ->
+        collect_fn.(acc, :halt)
+        err
+
       _ ->
         collect_fn.(acc, :halt)
         {:error, "Release does not have required keys \"has_docs\" and \"version\"."}

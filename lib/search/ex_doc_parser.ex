@@ -4,9 +4,9 @@ defmodule Search.ExDocParser do
   ExDoc-generated documentation page
   """
 
-  @search_data_regex ~r/dist\/search_data-[0-9A-F]{8}\.js/
+  @search_data_regex ~r/^dist\/search_data-[0-9A-F]{8}\.js$/
 
-  def get_documentation(file_or_binary \\ []) do
+  def untar_exdoc_release(file_or_binary \\ []) do
     %{file: file, binary: binary} =
       file_or_binary
       |> Keyword.validate!(file: nil, binary: nil)
@@ -19,23 +19,21 @@ defmodule Search.ExDocParser do
         _ -> raise ArgumentError, message: "Exactly one of :file or :binary must be given"
       end
 
-    case :erl_tar.extract(tarball, [:memory]) do
-      {:error, _} = err ->
-        err
+    :erl_tar.extract(tarball, [:memory])
+  end
 
-      {:ok, search_data} ->
-        search_data =
-          Enum.find(search_data, fn {maybe_search_data, _} ->
-            maybe_search_data |> to_string() |> String.match?(@search_data_regex)
-          end)
+  def extract_search_data(untarred_docs) when is_list(untarred_docs) do
+    search_data =
+      Enum.find(untarred_docs, fn {maybe_search_data, _} ->
+        maybe_search_data |> to_string() |> String.match?(@search_data_regex)
+      end)
 
-        if is_nil(search_data) do
-          {:error, "Search data not found, package documentation is not in a supported format."}
-        else
-          {_, search_data} = search_data
+    if is_nil(search_data) do
+      {:error, "Search data not found, package documentation is not in a supported format."}
+    else
+      {_, search_data} = search_data
 
-          parse_search_data(search_data)
-        end
+      parse_search_data(search_data)
     end
   end
 

@@ -11,72 +11,47 @@ defmodule Search.ExDocParserTest do
     if is_nil(tmp_dir) do
       {:ok, []}
     else
-      no_items_key = JSON.encode!(@dummy_items)
+      search_data_content =
+        "searchData=#{JSON.encode!(%{"items" => @dummy_items})}"
 
-      with_items_key =
-        JSON.encode!(%{"items" => @dummy_items})
+      search_data_path = "dist/search_data-12ABCDEF.js"
 
-      with_prefix_with_items_key =
-        "searchData=#{with_items_key}"
-
-      with_prefix_no_items_key =
-        "searchData=#{no_items_key}"
-
-      no_items_key_tar = make_targz(tmp_dir, no_items_key, "dist/search_data-12ABCDEF.js")
-      with_items_key_tar = make_targz(tmp_dir, with_items_key, "dist/search_data-12ABCDEF.js")
-
-      with_prefix_with_items_key_tar =
-        make_targz(tmp_dir, with_prefix_with_items_key, "dist/search_data-12ABCDEF.js")
-
-      with_prefix_no_items_key_tar =
-        make_targz(tmp_dir, with_prefix_no_items_key, "dist/search_data-12ABCDEF.js")
-
-      no_search_data =
-        make_targz(tmp_dir, with_prefix_with_items_key, "dist/not_search_data-12ABCDEF.js")
-
-      invalid_json =
-        make_targz(tmp_dir, "searchData=#{@invalid_json}", "dist/search_data-12ABCDEF.js")
+      test_tar =
+        make_targz(tmp_dir, search_data_content, search_data_path)
 
       {:ok,
        %{
-         no_prefix: %{
-           no_items_key: no_items_key_tar,
-           with_items_key: with_items_key_tar
-         },
-         with_prefix: %{
-           no_items_key: with_prefix_no_items_key_tar,
-           with_items_key: with_prefix_with_items_key_tar
-         },
-         wrong_format: no_search_data,
-         invalid_json: invalid_json
+         test_tar: test_tar,
+         search_data_path: search_data_path,
+         search_data_content: search_data_content
        }}
     end
   end
 
-  describe "get_documentation/1" do
+  describe "untar_exdoc_release/1" do
     test "when given no options, should raise" do
-      assert_raise ArgumentError, fn -> ExDocParser.get_documentation() end
+      assert_raise ArgumentError, fn -> ExDocParser.untar_exdoc_release() end
     end
 
     test "when given both :file and :binary, should raise" do
       assert_raise ArgumentError, fn ->
-        ExDocParser.get_documentation(file: :something, binary: :something)
+        ExDocParser.untar_exdoc_release(file: :something, binary: :something)
       end
     end
 
     @tag :tmp_dir
     test "should produce the same results for a file input and its binary contents", %{
-      with_prefix: %{with_items_key: file}
+      test_tar: test_tar
     } do
-      fd = File.open!(file, [:compressed, :binary])
+      fd = File.open!(test_tar, [:compressed, :binary])
       contents = IO.binread(fd, :eof)
 
       # reset the file descriptor
       :ok = File.close(fd)
-      fd = File.open!(file, [:compressed, :binary])
+      fd = File.open!(test_tar, [:compressed, :binary])
 
-      file_res = ExDocParser.get_documentation(file: fd)
-      binary_res = ExDocParser.get_documentation(binary: contents)
+      file_res = ExDocParser.untar_exdoc_release(file: fd)
+      binary_res = ExDocParser.untar_exdoc_release(binary: contents)
 
       :ok = File.close(fd)
 
@@ -84,12 +59,15 @@ defmodule Search.ExDocParserTest do
     end
 
     @tag :tmp_dir
-    test "should successfully extract contents of the search data for a well-formed tarball", %{
-      with_prefix: %{with_items_key: file}
+    test "should successfully extract contents of a well-formed tarball", %{
+      test_tar: test_tar,
+      search_data_path: search_data_path,
+      search_data_content: search_data_content
     } do
-      file = File.open!(file, [:compressed, :binary])
+      file = File.open!(test_tar, [:compressed, :binary])
 
-      assert {:ok, @dummy_items} == ExDocParser.get_documentation(file: file)
+      assert {:ok, [{to_charlist(search_data_path), search_data_content}]} ==
+               ExDocParser.untar_exdoc_release(file: file)
 
       File.close(file)
     end
@@ -97,53 +75,57 @@ defmodule Search.ExDocParserTest do
     test "should fail for non-tar data" do
       assert match?(
                {:error, _erl_tar_error},
-               ExDocParser.get_documentation(binary: "I am not a tarball!")
+               ExDocParser.untar_exdoc_release(binary: "I am not a tarball!")
              )
     end
+  end
 
-    @tag :tmp_dir
-    test "should fail for archives with no dist/search_data-XXXXXXXX.js files", %{wrong_format: file} do
-      file = File.open!(file, [:compressed, :binary])
+  describe "extract_search_data/1" do
+    test "should extract search data for archives with the right format" do
+      untar = [
+        {~c"dist/search_data-AF57AB42.js",
+         "searchData=#{JSON.encode!(%{"items" => @dummy_items})}"}
+      ]
+
+      assert {:ok, @dummy_items} = ExDocParser.extract_search_data(untar)
+    end
+
+    test "should fail for archives with no dist/search_data-XXXXXXXX.js files" do
+      untar = [
+        {~c"search_data-ABCDEF12.js", "not this"},
+        {~c"not_dist/search_data-12345678.js", "not this either"}
+      ]
 
       assert {:error,
               "Search data not found, package documentation is not in a supported format."} ==
-               ExDocParser.get_documentation(file: file)
-
-      File.close(file)
+               ExDocParser.extract_search_data(untar)
     end
 
-    @tag :tmp_dir
-    test "should fail for search data not starting with the \"searchData=\" prefix", %{
-      no_prefix: %{with_items_key: file}
-    } do
-      file = File.open!(file, [:compressed, :binary])
+    test "should fail for search data not starting with the \"searchData=\" prefix" do
+      untar = [
+        {~c"dist/search_data-AF57AB42.js", JSON.encode!(%{"items" => @dummy_items})}
+      ]
 
       assert {:error, "Search data content does not start with \"searchData=\"."} ==
-               ExDocParser.get_documentation(file: file)
-
-      File.close(file)
+               ExDocParser.extract_search_data(untar)
     end
 
-    @tag :tmp_dir
-    test "should fail for search data with invalid JSON", %{invalid_json: file} do
-      file = File.open!(file, [:compressed, :binary])
+    test "should fail for search data with invalid JSON" do
+      untar = [
+        {~c"dist/search_data-AF57AB42.js", "searchData=#{@invalid_json}"}
+      ]
 
       assert {:error, "Search data content is not proper JSON"} ==
-               ExDocParser.get_documentation(file: file)
-
-      File.close(file)
+               ExDocParser.extract_search_data(untar)
     end
 
-    @tag :tmp_dir
-    test "should fail for search data with valid JSON, but no \"items\" key", %{
-      with_prefix: %{no_items_key: file}
-    } do
-      file = File.open!(file, [:compressed, :binary])
+    test "should fail for search data with valid JSON, but no \"items\" key" do
+      untar = [
+        {~c"dist/search_data-AF57AB42.js", "searchData=#{JSON.encode!(@dummy_items)}"}
+      ]
 
       assert {:error, "Search data content does not contain the key \"items\""} ==
-               ExDocParser.get_documentation(file: file)
-
-      File.close(file)
+               ExDocParser.extract_search_data(untar)
     end
   end
 

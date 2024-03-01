@@ -4,6 +4,6 @@ defmodule Search.HexClient.Release do
   @type t :: %__MODULE__{
           package_name: String.t(),
           version: Version.t(),
-          has_docs: boolean(),
+          has_docs: boolean()
         }
 end

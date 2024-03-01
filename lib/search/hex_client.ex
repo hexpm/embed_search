@@ -8,7 +8,7 @@ defmodule Search.HexClient do
 
   def get_releases!(package_name) when is_binary(package_name) do
     res =
-      Req.get!("#{@hexpm_url}/packages/#{package_name}", headers: @headers)
+      Req.get!("#{@hexpm_url}/packages/#{package_name}", req_options())
 
     res.body["releases"]
     |> Stream.map(fn %{"has_docs" => has_docs, "version" => version} ->
@@ -26,11 +26,19 @@ defmodule Search.HexClient do
           _release
       ) do
     if has_docs do
-      Req.get("#{@hex_repo_url}/docs/#{package_name}-#{Version.to_string(version)}.tar.gz",
-        headers: @headers
-      )
+      case Req.get(
+             "#{@hex_repo_url}/docs/#{package_name}-#{Version.to_string(version)}.tar.gz",
+             req_options()
+           ) do
+        {:ok, res} -> res.body
+        err -> err
+      end
     else
       {:error, "Package release has no documentation"}
     end
+  end
+
+  defp req_options do
+    Keyword.merge([headers: @headers], Application.get_env(:search, :hex_client_req_options, []))
   end
 end

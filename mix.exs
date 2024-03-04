@@ -59,7 +59,8 @@ defmodule Search.MixProject do
       {:bumblebee, "~> 0.5.3"},
       {:exla, ">= 0.0.0"},
       {:json, "~> 1.4"},
-      {:req, "~> 0.4.0"}
+      {:req, "~> 0.4.0"},
+      {:progress_bar, "> 0.0.0"}
     ]
   end
 

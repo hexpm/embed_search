@@ -60,7 +60,8 @@ defmodule Search.MixProject do
       {:exla, ">= 0.0.0"},
       {:json, "~> 1.4"},
       {:req, "~> 0.4.0"},
-      {:progress_bar, "> 0.0.0"}
+      {:progress_bar, "> 0.0.0"},
+      {:earmark, "~> 1.4.46"}
     ]
   end
 

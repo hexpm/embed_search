@@ -1,7 +1,7 @@
 defmodule Search.HexClientTest do
   use ExUnit.Case, async: true
 
-  alias Search.{HexClient, TestHelpers}
+  alias Search.HexClient
 
   setup ctx do
     tmp_dir = ctx[:tmp_dir]
@@ -9,18 +9,21 @@ defmodule Search.HexClientTest do
     if is_nil(tmp_dir) do
       {:ok, []}
     else
-      content = "# I am a README!"
-      archive_name = "README.md"
-      test_tar = TestHelpers.make_targz(tmp_dir, content, archive_name)
-      test_tar_contents = [{to_charlist(archive_name), content}]
+      test_tar_contents = [{~c"README.md", "# I am a README!"}]
+      test_tar_path = Path.join(tmp_dir, "test_tar.tar.gz")
 
-      {:ok, %{test_tar: test_tar, test_tar_contents: test_tar_contents}}
+      :ok =
+        :erl_tar.create(test_tar_path, test_tar_contents, [
+          :compressed
+        ])
+
+      {:ok, %{test_tar: test_tar_path, test_tar_contents: test_tar_contents}}
     end
   end
 
   describe "get_releases/1" do
     test "when given a well-formed package JSON, successfuly parses the releases" do
-      Req.Test.stub(Search.HexClient, fn conn ->
+      Req.Test.stub(HexClient, fn conn ->
         Req.Test.json(conn, %{
           "releases" => [
             %{"version" => "1.2.3", "has_docs" => true},
@@ -48,8 +51,8 @@ defmodule Search.HexClientTest do
     end
 
     test "when getting a response other than 200 OK, should fail gracefully" do
-      Req.Test.stub(Search.HexClient, fn conn ->
-        Plug.Conn.send_resp(conn, 403, "Internal server error")
+      Req.Test.stub(HexClient, fn conn ->
+        Plug.Conn.send_resp(conn, 403, "Forbidden")
       end)
 
       assert HexClient.get_releases("test_package") == {:error, "HTTP 403"}
@@ -62,7 +65,7 @@ defmodule Search.HexClientTest do
       test_tar: test_tar,
       test_tar_contents: test_tar_contents
     } do
-      Req.Test.stub(Search.HexClient, fn conn ->
+      Req.Test.stub(HexClient, fn conn ->
         conn
         |> Plug.Conn.put_resp_content_type("application/octet-stream", nil)
         |> Plug.Conn.send_file(200, test_tar)
@@ -88,8 +91,8 @@ defmodule Search.HexClientTest do
     end
 
     test "when getting a response other than 200 OK, should fail gracefully" do
-      Req.Test.stub(Search.HexClient, fn conn ->
-        Plug.Conn.send_resp(conn, 403, "Internal server error")
+      Req.Test.stub(HexClient, fn conn ->
+        Plug.Conn.send_resp(conn, 403, "Forbidden")
       end)
 
       rel = %HexClient.Release{

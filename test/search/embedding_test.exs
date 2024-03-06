@@ -2,13 +2,12 @@ defmodule Search.EmbeddingTest do
   use ExUnit.Case, async: true
 
   require Nx
-  require Logger
   alias Search.Embedding
 
   test "creates embedding tensor of correct shape for a single input" do
     %{embedding: embedding} = Nx.Serving.batched_run(Search.Embedding, "The cat chases the mouse")
 
-    assert {Embedding.embedding_size()} == Nx.shape(embedding)
+    assert Nx.shape(embedding) == {Embedding.embedding_size()}
   end
 
   test "creates embedding tensor of correct shape for batched inputs" do
@@ -18,7 +17,7 @@ defmodule Search.EmbeddingTest do
         "Lorem ipsum dolor sit amet"
       ])
 
-    assert {Embedding.embedding_size()} == Nx.shape(embedding1)
-    assert {Embedding.embedding_size()} == Nx.shape(embedding2)
+    assert Nx.shape(embedding1) == {Embedding.embedding_size()}
+    assert Nx.shape(embedding2) == {Embedding.embedding_size()}
   end
 end

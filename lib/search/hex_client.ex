@@ -1,11 +1,11 @@
 defmodule Search.HexClient do
-  @hexpm_url "https://hex.pm/api"
-  @hex_repo_url "https://repo.hex.pm"
+  @api_url "https://hex.pm/api"
+  @repo_url "https://repo.hex.pm"
 
   alias Search.HexClient
 
   def get_releases(package_name) when is_binary(package_name) do
-    case get(:rest, "packages/#{package_name}") do
+    case get("#{@api_url}/packages/#{package_name}") do
       {:ok, %{status: 200, body: %{"releases" => releases}}} ->
         map_json_to_releases(package_name, releases)
 
@@ -45,10 +45,7 @@ defmodule Search.HexClient do
           _release
       ) do
     if has_docs do
-      case get(
-             :repo,
-             "docs/#{package_name}-#{version}.tar.gz"
-           ) do
+      case get("#{@repo_url}/docs/#{package_name}-#{version}.tar.gz") do
         {:ok, %{status: 200, body: body}} -> {:ok, body}
         {:ok, %{status: status}} -> {:error, "HTTP #{status}"}
         err -> err
@@ -58,13 +55,7 @@ defmodule Search.HexClient do
     end
   end
 
-  defp get(source, loc) do
-    base =
-      case source do
-        :rest -> @hexpm_url
-        :repo -> @hex_repo_url
-      end
-
-    Req.get("#{base}/#{loc}", Application.get_env(:search, :hex_client_req_options, []))
+  defp get(url) do
+    Req.get(url, Application.get_env(:search, :hex_client_req_options, []))
   end
 end

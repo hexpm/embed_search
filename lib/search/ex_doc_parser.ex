@@ -21,16 +21,18 @@ defmodule Search.ExDocParser do
 
   @search_data_prefix "searchData="
   defp parse_search_data(search_data) when is_binary(search_data) do
-    if !String.starts_with?(search_data, @search_data_prefix) do
-      {:error, "Search data content does not start with \"#{@search_data_prefix}\"."}
+    with @search_data_prefix <> search_data_json <- search_data,
+         {:ok, %{"items" => doc_items}} <- Jason.decode(search_data_json) do
+      {:ok, doc_items}
     else
-      case search_data
-           |> String.slice(String.length(@search_data_prefix)..-1//1)
-           |> Jason.decode() do
-        {:ok, %{"items" => doc_items}} -> {:ok, doc_items}
-        {:ok, _} -> {:error, "Search data content does not contain the key \"items\""}
-        _ -> {:error, "Search data content is not proper JSON"}
-      end
+      {:ok, _} ->
+        {:error, "Search data content does not contain the key \"items\""}
+
+      {:error, _} ->
+        {:error, "Search data content is not proper JSON"}
+
+      no_prefix when is_binary(no_prefix) ->
+        {:error, "Search data content does not start with \"#{@search_data_prefix}\"."}
     end
   end
 end

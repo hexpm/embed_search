@@ -18,11 +18,13 @@ defmodule Mix.Tasks.Search.Index do
     {:ok, releases} = Search.HexClient.get_releases(package)
 
     release =
-      with [version] <- args_tail,
-           {:ok, version} = Version.parse(version) do
-        Enum.find(releases, &(&1.version == version))
-      else
-        [] -> Enum.max_by(releases, & &1.version, Version, fn -> nil end)
+      case args_tail do
+        [version] ->
+          version = Version.parse!(version)
+          Enum.find(releases, &(&1.version == version))
+
+        [] ->
+          Enum.max_by(releases, & &1.version, Version, fn -> nil end)
       end
 
     if release do

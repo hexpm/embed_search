@@ -44,7 +44,7 @@ defmodule Search.ExDocParser do
     else
       case search_data
            |> String.slice(String.length(@search_data_prefix)..-1//1)
-           |> JSON.decode() do
+           |> Jason.decode() do
         {:ok, %{"items" => doc_items}} -> {:ok, doc_items}
         {:ok, _} -> {:error, "Search data content does not contain the key \"items\""}
         _ -> {:error, "Search data content is not proper JSON"}

@@ -12,7 +12,7 @@ defmodule Search.ExDocParserTest do
       {:ok, []}
     else
       search_data_content =
-        "searchData=#{JSON.encode!(%{"items" => @dummy_items})}"
+        "searchData=#{Jason.encode!(%{"items" => @dummy_items})}"
 
       search_data_path = "dist/search_data-12ABCDEF.js"
 
@@ -84,7 +84,7 @@ defmodule Search.ExDocParserTest do
     test "should extract search data for archives with the right format" do
       untar = [
         {~c"dist/search_data-AF57AB42.js",
-         "searchData=#{JSON.encode!(%{"items" => @dummy_items})}"}
+         "searchData=#{Jason.encode!(%{"items" => @dummy_items})}"}
       ]
 
       assert {:ok, @dummy_items} = ExDocParser.extract_search_data(untar)
@@ -103,7 +103,7 @@ defmodule Search.ExDocParserTest do
 
     test "should fail for search data not starting with the \"searchData=\" prefix" do
       untar = [
-        {~c"dist/search_data-AF57AB42.js", JSON.encode!(%{"items" => @dummy_items})}
+        {~c"dist/search_data-AF57AB42.js", Jason.encode!(%{"items" => @dummy_items})}
       ]
 
       assert {:error, "Search data content does not start with \"searchData=\"."} ==
@@ -121,7 +121,7 @@ defmodule Search.ExDocParserTest do
 
     test "should fail for search data with valid JSON, but no \"items\" key" do
       untar = [
-        {~c"dist/search_data-AF57AB42.js", "searchData=#{JSON.encode!(@dummy_items)}"}
+        {~c"dist/search_data-AF57AB42.js", "searchData=#{Jason.encode!(@dummy_items)}"}
       ]
 
       assert {:error, "Search data content does not contain the key \"items\""} ==

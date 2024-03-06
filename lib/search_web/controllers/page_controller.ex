@@ -8,7 +8,7 @@ defmodule SearchWeb.PageController do
   end
 
   def search(conn, %{"k" => k, "search_text" => search_text} = params) do
-    k = String.trim(k)
+    k = String.to_integer(k)
     search_text = String.trim(search_text)
 
     errors =
@@ -18,28 +18,13 @@ defmodule SearchWeb.PageController do
         []
       end
 
-    {k, errors} =
-      case Integer.parse(k) do
-        _ when k == "" ->
-          {nil, Keyword.merge(errors, k: {"Can't be blank", []})}
-
-        :error ->
-          {nil, Keyword.merge(errors, k: {"Must be an integer", []})}
-
-        {k, _rest} when k < 1 ->
-          {nil, Keyword.merge(errors, k: {"Must be at least 1", []})}
-
-        {k, _rest} ->
-          {k, errors}
-      end
-
-    if length(errors) > 0 do
-      render(conn, :home, form: Phoenix.Component.to_form(params, errors: errors))
-    else
+    if errors == [] do
       %{embedding: query_tensor} = Nx.Serving.batched_run(Search.Embedding, search_text)
       fragments = Search.Fragment.knn_lookup(query_tensor, k: k)
 
       render(conn, :search, fragments: fragments)
+    else
+      render(conn, :home, form: Phoenix.Component.to_form(params, errors: errors))
     end
   end
 end

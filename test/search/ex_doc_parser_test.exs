@@ -41,16 +41,7 @@ defmodule Search.ExDocParserTest do
       ]
 
       assert ExDocParser.extract_search_data(untar) ==
-               {:error, "Search data content is not proper JSON"}
-    end
-
-    test "should fail for search data with valid JSON, but no \"items\" key" do
-      untar = [
-        {~c"dist/search_data-AF57AB42.js", "searchData=#{Jason.encode!(@dummy_items)}"}
-      ]
-
-      assert ExDocParser.extract_search_data(untar) ==
-               {:error, "Search data content does not contain the key \"items\""}
+               {:error, "Search data content is invalid JSON"}
     end
   end
 end

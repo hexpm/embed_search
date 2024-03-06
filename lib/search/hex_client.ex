@@ -2,52 +2,42 @@ defmodule Search.HexClient do
   @hexpm_url "https://hex.pm/api"
   @hex_repo_url "https://repo.hex.pm"
 
-  @headers %{"content-type" => "application/json"}
-
   alias Search.HexClient
 
   def get_releases(package_name) when is_binary(package_name) do
-    case Req.get("#{@hexpm_url}/packages/#{package_name}", req_options()) do
-      {:ok, %{body: %{"releases" => releases}}} ->
-        map_json_to_releases(package_name, releases, [])
+    case get(:rest, "packages/#{package_name}") do
+      {:ok, %{status: 200, body: %{"releases" => releases}}} ->
+        map_json_to_releases(package_name, releases)
 
-      {:ok, _} ->
-        {:error, "Response does not have a \"releases\" key."}
+      {:ok, %{status: status}} ->
+        {:error, "HTTP #{status}"}
 
       err ->
         err
     end
   end
 
-  defp map_json_to_releases(package_name, releases_json, into) do
-    {acc, collect_fn} = Collectable.into(into)
-    map_json_to_releases(package_name, releases_json, acc, collect_fn)
+  defp map_json_to_releases(package_name, releases_json) do
+    map_json_to_releases(package_name, releases_json, [])
   end
 
-  defp map_json_to_releases(_package_name, [] = _releases_json, acc, collect_fn) do
-    {:ok, collect_fn.(acc, :done)}
+  defp map_json_to_releases(_package_name, [] = _releases_json, acc) do
+    {:ok, Enum.reverse(acc)}
   end
 
-  defp map_json_to_releases(package_name, [head | tail] = _releases_json, acc, collect_fn) do
-    with %{"has_docs" => has_docs, "version" => version} <- head,
-         {:ok, version} <- Version.parse(version) do
-      release = %HexClient.Release{
-        package_name: package_name,
-        version: version,
-        has_docs: has_docs
-      }
+  defp map_json_to_releases(
+         package_name,
+         [%{"has_docs" => has_docs, "version" => version} | tail] = _releases_json,
+         acc
+       ) do
+    release = %HexClient.Release{
+      package_name: package_name,
+      version: Version.parse!(version),
+      has_docs: has_docs
+    }
 
-      acc = collect_fn.(acc, {:cont, release})
-      map_json_to_releases(package_name, tail, acc, collect_fn)
-    else
-      {:error, _} = err ->
-        collect_fn.(acc, :halt)
-        err
-
-      _ ->
-        collect_fn.(acc, :halt)
-        {:error, "Release does not have required keys \"has_docs\" and \"version\"."}
-    end
+    acc = [release | acc]
+    map_json_to_releases(package_name, tail, acc)
   end
 
   def get_docs_tarball(
@@ -55,11 +45,12 @@ defmodule Search.HexClient do
           _release
       ) do
     if has_docs do
-      case Req.get(
-             "#{@hex_repo_url}/docs/#{package_name}-#{Version.to_string(version)}.tar.gz",
-             req_options()
+      case get(
+             :repo,
+             "docs/#{package_name}-#{version}.tar.gz"
            ) do
-        {:ok, res} -> {:ok, res.body}
+        {:ok, %{status: 200, body: body}} -> {:ok, body}
+        {:ok, %{status: status}} -> {:error, "HTTP #{status}"}
         err -> err
       end
     else
@@ -67,7 +58,13 @@ defmodule Search.HexClient do
     end
   end
 
-  defp req_options do
-    Keyword.merge([headers: @headers], Application.get_env(:search, :hex_client_req_options, []))
+  defp get(source, loc) do
+    base =
+      case source do
+        :rest -> @hexpm_url
+        :repo -> @hex_repo_url
+      end
+
+    Req.get("#{base}/#{loc}", Application.get_env(:search, :hex_client_req_options, []))
   end
 end

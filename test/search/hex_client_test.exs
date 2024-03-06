@@ -47,7 +47,6 @@ defmodule Search.HexClientTest do
                 ]}
     end
 
-
     test "when getting a response other than 200 OK, should fail gracefully" do
       Req.Test.stub(Search.HexClient, fn conn ->
         Plug.Conn.send_resp(conn, 403, "Internal server error")

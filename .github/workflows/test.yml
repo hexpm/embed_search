@@ -9,6 +9,7 @@ env:
   otp: "26.2.2"
   elixir: "1.16.1"
   MIX_ENV: test
+  BUMBLEBEE_CACHE_DIR: ~/.cache/bumblebee
 
 jobs:
   main:
@@ -45,6 +46,12 @@ jobs:
           key: ${{ runner.os }}-mix-${{ env.elixir }}-${{ env.otp }}-${{ hashFiles('**/mix.lock') }}
           restore-keys: |
             ${{ runner.os }}-mix-${{ env.elixir }}-${{ env.otp }}-
+
+      - name: Cache Bumblebee models
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.BUMBLEBEE_CACHE_DIR }}
+          key: ${{ runner.os }}-bumblebee
 
       - name: Install mix dependencies
         run: mix deps.get --check-locked

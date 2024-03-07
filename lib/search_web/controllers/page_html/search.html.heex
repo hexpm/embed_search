@@ -1,0 +1,3 @@
+<div :for={fragment <- @fragments} class="bg-gray-100 p-4 m-4 rounded">
+  <%= raw(Earmark.as_html!(fragment.doc_text)) %>
+</div>

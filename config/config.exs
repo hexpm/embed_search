@@ -11,6 +11,9 @@ config :search,
   ecto_repos: [Search.Repo],
   generators: [timestamp_type: :utc_datetime]
 
+# Add types added by the pgvector-elixir extension to Postgrex
+config :search, Search.Repo, types: Search.PostgrexTypes
+
 # Configures the endpoint
 config :search, SearchWeb.Endpoint,
   url: [host: "localhost"],
@@ -51,6 +54,9 @@ config :logger, :console,
 
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason
+
+# Configure the EXLA backend for Nx
+config :nx, :default_backend, EXLA.Backend
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

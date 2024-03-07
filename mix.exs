@@ -54,7 +54,13 @@ defmodule Search.MixProject do
       {:telemetry_poller, "~> 1.0"},
       {:jason, "~> 1.2"},
       {:dns_cluster, "~> 0.1.1"},
-      {:bandit, "~> 1.2"}
+      {:bandit, "~> 1.2"},
+      {:pgvector, "~> 0.2.0"},
+      {:bumblebee, "~> 0.5.3"},
+      {:exla, ">= 0.0.0"},
+      {:req, "~> 0.4.0"},
+      {:progress_bar, "> 0.0.0"},
+      {:earmark, "~> 1.4.46"}
     ]
   end
 

@@ -20,6 +20,12 @@ config :search, SearchWeb.Endpoint,
   secret_key_base: "KoDCWrF9SEsnoM8svaiDh9g62hqg8cKGhafXsTKunfl/FVMTq1psZAyOoMp3eIO2",
   server: false
 
+# Enable testing plug for Req to enable stubs in HexClientTest
+config :search,
+  hex_client_req_options: [
+    plug: {Req.Test, Search.HexClient}
+  ]
+
 # Print only warnings and errors during test
 config :logger, level: :warning
 

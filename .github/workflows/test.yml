@@ -9,6 +9,7 @@ env:
   otp: "26.2.2"
   elixir: "1.16.1"
   MIX_ENV: test
+  BUMBLEBEE_CACHE_DIR: ~/.cache/bumblebee
 
 jobs:
   main:
@@ -63,3 +64,9 @@ jobs:
 
       - name: Run tests
         run: mix test --warnings-as-errors
+
+      - name: Cache Bumblebee models
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.BUMBLEBEE_CACHE_DIR }}
+          key: ${{ runner.os }}-bumblebee

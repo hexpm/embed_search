@@ -7,7 +7,9 @@ defmodule Search.Packages.DocItem do
     field :type, :string
     field :title, :string
     field :ref, :string
+    field :doc, :string
     belongs_to :package, Packages.Package
+    has_many :doc_fragments, Packages.DocFragment
 
     timestamps(type: :utc_datetime)
   end
@@ -15,7 +17,7 @@ defmodule Search.Packages.DocItem do
   @doc false
   def changeset(doc_item, attrs) do
     doc_item
-    |> cast(attrs, [:ref, :type, :title])
-    |> validate_required([:ref, :type, :title])
+    |> cast(attrs, [:ref, :type, :title, :doc, :package])
+    |> validate_required([:ref, :type, :title, :doc, :package])
   end
 end

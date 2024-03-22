@@ -56,7 +56,7 @@ config :logger, :console,
 config :phoenix, :json_library, Jason
 
 # Configure the EXLA backend for Nx
-config :nx, :default_backend, EXLA.Backend
+config :nx, :default_backend, {EXLA.Backend, client: :host}
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

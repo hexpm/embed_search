@@ -11,16 +11,21 @@ defmodule Search.Embeddings.Embedding do
 
     batch_size = Keyword.get(compile_opts, :batch_size)
 
+    table_name =
+      quote do
+        "#{Macro.underscore(__MODULE__)}_embeddings"
+      end
+
     quote do
       alias Search.Packages
       use Ecto.Schema
       import Ecto.Changeset
 
       def table_name do
-        "#{Macro.underscore(__MODULE__)}_embeddings"
+        unquote(table_name)
       end
 
-      schema table_name() do
+      schema unquote(table_name) do
         field :embedding, Vector
         belongs_to :doc_fragment, Packages.DocFragment
 

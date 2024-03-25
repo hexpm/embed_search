@@ -35,17 +35,17 @@ defmodule Mix.Tasks.Search.Index do
 
       ProgressBar.render(0, docs_len)
 
-      docs
-      |> Stream.with_index(1)
-      |> Enum.each(fn {doc, i} ->
-        %{embedding: embedding} = Nx.Serving.batched_run(Search.Embedding, doc)
+      # docs
+      # |> Stream.with_index(1)
+      # |> Enum.each(fn {doc, i} ->
+      #   %{embedding: embedding} = Nx.Serving.batched_run(Search.Embedding, doc)
 
-        ProgressBar.render(i, docs_len)
+      #   ProgressBar.render(i, docs_len)
 
-        fragment = %Search.Fragment{doc_text: doc, embedding: embedding}
+      #   fragment = %Search.Fragment{doc_text: doc, embedding: embedding}
 
-        Search.Repo.insert!(fragment)
-      end)
+      #   Search.Repo.insert!(fragment)
+      # end)
     else
       Mix.shell().error("Release not found.")
     end

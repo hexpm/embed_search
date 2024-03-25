@@ -5,18 +5,20 @@ defmodule Search.Embeddings do
 
   import Ecto.Query
   import Pgvector.Ecto.Query
+  require Logger
   alias Search.Repo
 
   def knn_query(module, query_vector, opts \\ []) do
-    opts = Keyword.validate!(opts, metric: :cosine, k: nil)
-    metric = opts[:metric]
-    k = opts[:k]
+    %{metric: metric, k: k} =
+      opts
+      |> Keyword.validate!(metric: :cosine, k: nil)
+      |> Map.new()
 
     query =
       from e in module,
-        preload: [doc_fragments: [doc_items: :packages]],
-        limit: ^k,
-        select: e
+        preload: [doc_fragment: [doc_item: :package]],
+        select: e,
+        limit: ^k
 
     query =
       case metric do

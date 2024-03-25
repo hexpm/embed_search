@@ -2,14 +2,28 @@ defmodule Search.Embeddings.Embedding do
   alias Search.Packages
   alias Pgvector.Ecto.Vector
 
-  defmacro __using__(attrs \\ []) do
-    %{model: model_repo, embedding_size: embedding_size, compile_opts: compile_opts} =
-      attrs
-      |> Keyword.validate!([:model, :embedding_size, compile_opts: []])
-      |> Keyword.take([:model, :embedding_size, :compile_opts])
+  defmacro __using__(opts \\ []) do
+    %{
+      model: model_repo,
+      embedding_size: embedding_size,
+      serving_opts: serving_opts,
+      load_model_opts: load_model_opts,
+      load_tokenizer_opts: load_tokenizer_opts
+    } =
+      opts
+      |> Keyword.validate!([
+        :model,
+        :embedding_size,
+        serving_opts: [],
+        load_model_opts: [],
+        load_tokenizer_opts: []
+      ])
       |> Map.new()
 
-    batch_size = Keyword.get(compile_opts, :batch_size)
+    batch_size =
+      serving_opts
+      |> Keyword.get(:compile, [])
+      |> Keyword.get(:batch_size)
 
     table_name =
       quote do
@@ -48,13 +62,12 @@ defmodule Search.Embeddings.Embedding do
       end
 
       defp load_model do
-        {:ok, model_info} = Bumblebee.load_model(unquote(model_repo))
-        {:ok, tokenizer} = Bumblebee.load_tokenizer(unquote(model_repo))
+        {:ok, model_info} = Bumblebee.load_model(unquote(model_repo), unquote(load_model_opts))
 
-        Bumblebee.Text.text_embedding(model_info, tokenizer,
-          compile: unquote(compile_opts),
-          defn_options: [compiler: EXLA]
-        )
+        {:ok, tokenizer} =
+          Bumblebee.load_tokenizer(unquote(model_repo), unquote(load_tokenizer_opts))
+
+        Bumblebee.Text.text_embedding(model_info, tokenizer, unquote(serving_opts))
       end
     end
   end

@@ -5,18 +5,23 @@ defmodule Search.Application do
 
   use Application
 
+  def embedding_models,
+    do: [Search.Embeddings.ParaphraseL3, Search.Embeddings.ParaphraseAlbertSmall]
+
   @impl true
   def start(_type, _args) do
-    children = [
-      SearchWeb.Telemetry,
-      Search.Repo,
-      {DNSCluster, query: Application.get_env(:search, :dns_cluster_query) || :ignore},
-      {Phoenix.PubSub, name: Search.PubSub},
-      # Start a worker by calling: Search.Worker.start_link(arg)
-      {Search.Embeddings.ParaphraseL3, name: Search.Embeddings.ParaphraseL3},
-      # Start to serve requests, typically the last entry
-      SearchWeb.Endpoint
-    ]
+    children =
+      [
+        SearchWeb.Telemetry,
+        Search.Repo,
+        {DNSCluster, query: Application.get_env(:search, :dns_cluster_query) || :ignore},
+        {Phoenix.PubSub, name: Search.PubSub}
+      ] ++
+        Enum.map(embedding_models(), &{&1, name: &1}) ++
+        [
+          # Start to serve requests, typically the last entry
+          SearchWeb.Endpoint
+        ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options

@@ -13,7 +13,7 @@ defmodule Search.Packages.DocFragment do
   @doc false
   def changeset(doc_fragment, attrs) do
     doc_fragment
-    |> cast(attrs, [:text])
-    |> validate_required([:text])
+    |> cast(attrs, [:text, :doc_fragment])
+    |> validate_required([:text, :doc_fragment])
   end
 end

@@ -1,7 +1,7 @@
 defmodule Search.EmbeddingsTest do
   use Search.DataCase, async: true
 
-  alias Search.{Embeddings, Repo, Packages}
+  alias Search.{Embeddings, Repo, PackagesFixtures}
 
   import Nx.Defn
   import Ecto.Query
@@ -10,31 +10,7 @@ defmodule Search.EmbeddingsTest do
     {embeddings, rng_key} =
       Nx.Random.normal(Nx.Random.key(42), shape: {10, Embeddings.ParaphraseL3.embedding_size()})
 
-    package =
-      Repo.insert!(%Packages.Package{
-        name: "Test package",
-        version: "1.0.1"
-      })
-
-    fragments =
-      for i <- 0..9 do
-        item =
-          Repo.insert!(%Packages.DocItem{
-            title: "Module doc title",
-            ref: "Test ref",
-            doc: "Text #{i}",
-            type: "module",
-            package: package
-          })
-
-        fragment =
-          Repo.insert!(%Packages.DocFragment{
-            text: "Preprocessed text #{i}",
-            doc_item: item
-          })
-
-        fragment
-      end
+    fragments = PackagesFixtures.doc_fragments_fixture()
 
     for {fragment, i} <- Enum.with_index(fragments) do
       Repo.insert!(%Embeddings.ParaphraseL3{doc_fragment: fragment, embedding: embeddings[i]})

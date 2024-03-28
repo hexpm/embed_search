@@ -19,7 +19,7 @@ defmodule Search.PackagesFixtures do
     package
   end
 
-  def doc_fragments_fixture(num_fragments \\ 10) do
+  def doc_fragments_fixture(num_fragments) do
     package =
       Search.Repo.insert!(%Search.Packages.Package{
         name: "Test package",

@@ -8,9 +8,9 @@ defmodule Search.EmbeddingCase do
       setup ctx do
         case ctx do
           %{db: true} ->
-            [fragment] = PackagesFixtures.doc_fragments_fixture(1)
+            fragments = PackagesFixtures.doc_fragments_fixture(4)
 
-            {:ok, %{fragment: fragment}}
+            {:ok, %{fragments: fragments}}
 
           _ ->
             {:ok, []}
@@ -36,7 +36,7 @@ defmodule Search.EmbeddingCase do
       end
 
       @tag :db
-      test "can insert the embedding of the right size", %{fragment: fragment} do
+      test "can insert the embedding of the right size", %{fragments: [fragment | _rest]} do
         {embedding, _} =
           Nx.Random.uniform(Nx.Random.key(42), shape: {unquote(module).embedding_size()})
 
@@ -48,7 +48,7 @@ defmodule Search.EmbeddingCase do
       end
 
       @tag :db
-      test "cannot insert the embedding of the wrong size", %{fragment: fragment} do
+      test "cannot insert the embedding of the wrong size", %{fragments: [fragment | _rest]} do
         {embedding, _} =
           Nx.Random.uniform(Nx.Random.key(42), shape: {unquote(module).embedding_size() + 1})
 
@@ -61,7 +61,7 @@ defmodule Search.EmbeddingCase do
       end
 
       @tag :db
-      test "cannot create an orphaned embedding", %{fragment: _fragment} do
+      test "cannot create an orphaned embedding", %{fragments: _fragments} do
         {embedding, _} =
           Nx.Random.uniform(Nx.Random.key(42), shape: {unquote(module).embedding_size() + 1})
 
@@ -73,11 +73,27 @@ defmodule Search.EmbeddingCase do
       end
 
       @tag :db
-      test "cannot create an embedding without the embedding tensor", %{fragment: fragment} do
+      test "cannot create an embedding without the embedding tensor", %{
+        fragments: [fragment | _rest]
+      } do
         assert_raise Postgrex.Error, fn ->
           Repo.insert!(%unquote(module){
             doc_fragment: fragment
           })
+        end
+      end
+
+      describe "embed/0" do
+        @tag :db
+        test "creates a #{unquote(module)} entity for each fragment to be embedded", %{
+          fragments: fragments
+        } do
+          {:ok, updated_fragments} = unquote(module).embed()
+
+          embeddings_num = Repo.aggregate(unquote(module), :count)
+
+          assert embeddings_num == length(fragments)
+          assert length(updated_fragments) == length(fragments)
         end
       end
     end

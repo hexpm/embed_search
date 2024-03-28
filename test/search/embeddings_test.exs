@@ -8,9 +8,9 @@ defmodule Search.EmbeddingsTest do
 
   setup do
     {embeddings, rng_key} =
-      Nx.Random.normal(Nx.Random.key(42), shape: {10, Embeddings.ParaphraseL3.embedding_size()})
+      Nx.Random.normal(Nx.Random.key(42), shape: {4, Embeddings.ParaphraseL3.embedding_size()})
 
-    fragments = PackagesFixtures.doc_fragments_fixture()
+    fragments = PackagesFixtures.doc_fragments_fixture(4)
 
     for {fragment, i} <- Enum.with_index(fragments) do
       Repo.insert!(%Embeddings.ParaphraseL3{doc_fragment: fragment, embedding: embeddings[i]})
@@ -43,9 +43,9 @@ defmodule Search.EmbeddingsTest do
     end
 
     test "when given value for :k option, returns only the top k results", %{query: query} do
-      knn_result = Embeddings.knn_query(Embeddings.ParaphraseL3, query, k: 5)
+      knn_result = Embeddings.knn_query(Embeddings.ParaphraseL3, query, k: 3)
 
-      assert length(knn_result) == 5
+      assert length(knn_result) == 3
     end
   end
 

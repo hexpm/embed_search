@@ -6,7 +6,79 @@ defmodule Search.Packages do
   import Ecto.Query, warn: false
   alias Search.Repo
 
-  alias Search.Packages.Package
+  alias Search.Packages.{Package, DocItem, DocFragment}
+  alias Search.{HexClient, ExDocParser}
+
+  @doc """
+  If given a package name, adds the latest version of the package to the app. If given a `#{HexClient.Release}` adds
+  the specified release. Does not embed it yet.
+  """
+  def add_package(package_name) when is_binary(package_name) do
+    case HexClient.get_releases(package_name) do
+      {:ok, releases} ->
+        latest = Enum.max_by(releases, & &1.version, Version)
+        add_package(latest)
+
+      err ->
+        err
+    end
+  end
+
+  def add_package(%HexClient.Release{package_name: package_name, version: version} = release) do
+    with {:ok, docs} <- HexClient.get_docs_tarball(release),
+         {:ok, search_data} <- ExDocParser.extract_search_data(docs) do
+      Repo.transaction(fn ->
+        case create_package(%{name: package_name, version: Version.to_string(version)}) do
+          {:ok, package} ->
+            {items, fragments} =
+              create_items_from_package(package, search_data)
+              |> Enum.unzip()
+
+            {package, items, fragments}
+
+          {:error, err} ->
+            Repo.rollback(err)
+        end
+      end)
+    else
+      err -> err
+    end
+  end
+
+  defp create_items_from_package(%Package{} = package, search_data) do
+    for %{"doc" => doc, "title" => title, "ref" => ref, "type" => type} <- search_data do
+      with {:ok, item} <-
+             create_doc_item(%{package: package, doc: doc, title: title, ref: ref, type: type}),
+           {:ok, fragment} <-
+             create_doc_fragment(%{
+               doc_item: item,
+               text: "# #{title}\n\n#{doc}"
+             }) do
+        {item, fragment}
+      else
+        {:error, err} ->
+          Repo.rollback(err)
+      end
+    end
+  end
+
+  @doc """
+  Creates a doc fragment.
+  """
+  def create_doc_fragment(attrs) do
+    %DocFragment{}
+    |> DocFragment.changeset(attrs)
+    |> Repo.insert()
+  end
+
+  @doc """
+  Creates a doc item.
+  """
+  def create_doc_item(attrs) do
+    %DocItem{}
+    |> DocItem.changeset(attrs)
+    |> Repo.insert()
+  end
 
   @doc """
   Returns the list of packages.

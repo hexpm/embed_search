@@ -2,11 +2,64 @@ defmodule Search.PackagesTest do
   use Search.DataCase
 
   alias Search.Packages
+  import Search.PackagesFixtures
+
+  describe "doc_fragments" do
+    alias Search.Packages.DocFragment
+
+    test "create_doc_fragment/2 with valid data creates an item" do
+      [item] = doc_items_fixture(1)
+
+      valid_attrs = %{
+        text: "Some text"
+      }
+
+      assert {:ok, %DocFragment{} = fragment} = Packages.create_doc_fragment(item, valid_attrs)
+      assert fragment.text == valid_attrs.text
+      fragment = Repo.preload(fragment, :doc_item)
+      assert fragment.doc_item.id == item.id
+    end
+
+    test "create_doc_fragment/2 with invalid data returns error changeset" do
+      [item] = doc_items_fixture(1)
+
+      assert {:error, %Ecto.Changeset{}} =
+               Packages.create_doc_fragment(item, %{text: nil})
+    end
+  end
+
+  describe "doc_items" do
+    alias Search.Packages.DocItem
+
+    test "create_doc_item/2 with valid data creates an item" do
+      package = package_fixture()
+
+      valid_attrs = %{
+        title: "Some title",
+        type: "module",
+        doc: "Some doc",
+        ref: "Some ref"
+      }
+
+      assert {:ok, %DocItem{} = item} = Packages.create_doc_item(package, valid_attrs)
+      assert item.title == valid_attrs.title
+      assert item.type == valid_attrs.type
+      assert item.doc == valid_attrs.doc
+      assert item.ref == valid_attrs.ref
+      item = Repo.preload(item, :package)
+      assert item.package.id == package.id
+    end
+
+    test "create_doc_item/2 with invalid data returns error changeset" do
+      package = package_fixture()
+
+      assert {:error, %Ecto.Changeset{}} =
+               Packages.create_doc_item(package, %{title: nil, type: nil, doc: nil, ref: nil})
+    end
+  end
 
   describe "packages" do
     alias Search.Packages.Package
-
-    import Search.PackagesFixtures
 
     @invalid_attrs %{name: nil, version: nil}
 

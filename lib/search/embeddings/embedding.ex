@@ -58,8 +58,9 @@ defmodule Search.Embeddings.Embedding do
 
       def changeset(embedding, attrs) do
         embedding
-        |> cast(attrs, [:embedding, :doc_fragment])
-        |> validate_required([:embedding, :doc_fragment])
+        |> cast(attrs, [:embedding])
+        |> cast_assoc(:doc_fragment, required: true)
+        |> validate_required([:embedding])
       end
 
       def embedding_size, do: unquote(embedding_size)

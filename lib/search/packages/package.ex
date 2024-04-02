@@ -15,6 +15,7 @@ defmodule Search.Packages.Package do
   def changeset(package, attrs) do
     package
     |> cast(attrs, [:name, :version])
+    |> cast_assoc(:doc_items)
     |> validate_required([:name, :version])
   end
 end

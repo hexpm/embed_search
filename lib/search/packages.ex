@@ -48,10 +48,9 @@ defmodule Search.Packages do
   defp create_items_from_package(%Package{} = package, search_data) do
     for %{"doc" => doc, "title" => title, "ref" => ref, "type" => type} <- search_data do
       with {:ok, item} <-
-             create_doc_item(%{package: package, doc: doc, title: title, ref: ref, type: type}),
+             create_doc_item(package, %{doc: doc, title: title, ref: ref, type: type}),
            {:ok, fragment} <-
-             create_doc_fragment(%{
-               doc_item: item,
+             create_doc_fragment(item, %{
                text: "# #{title}\n\n#{doc}"
              }) do
         {item, fragment}
@@ -65,8 +64,8 @@ defmodule Search.Packages do
   @doc """
   Creates a doc fragment.
   """
-  def create_doc_fragment(attrs) do
-    %DocFragment{}
+  def create_doc_fragment(%DocItem{id: item_id} = _doc_item, attrs) do
+    %DocFragment{doc_item_id: item_id}
     |> DocFragment.changeset(attrs)
     |> Repo.insert()
   end
@@ -74,8 +73,8 @@ defmodule Search.Packages do
   @doc """
   Creates a doc item.
   """
-  def create_doc_item(attrs) do
-    %DocItem{}
+  def create_doc_item(%Package{id: package_id} = _package, attrs) do
+    %DocItem{package_id: package_id}
     |> DocItem.changeset(attrs)
     |> Repo.insert()
   end

@@ -17,7 +17,9 @@ defmodule Search.Packages.DocItem do
   @doc false
   def changeset(doc_item, attrs) do
     doc_item
-    |> cast(attrs, [:ref, :type, :title, :doc, :package])
-    |> validate_required([:ref, :type, :title, :doc, :package])
+    |> cast(attrs, [:ref, :type, :title, :doc])
+    |> cast_assoc(:package)
+    |> cast_assoc(:doc_fragments)
+    |> validate_required([:ref, :type, :title])
   end
 end

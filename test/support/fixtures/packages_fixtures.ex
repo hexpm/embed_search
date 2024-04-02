@@ -12,40 +12,35 @@ defmodule Search.PackagesFixtures do
       attrs
       |> Enum.into(%{
         name: "some name",
-        version: "some version"
+        version: "1.2.3"
       })
       |> Search.Packages.create_package()
 
     package
   end
 
-  def doc_fragments_fixture(num_fragments) do
-    package =
-      Search.Repo.insert!(%Search.Packages.Package{
-        name: "Test package",
-        version: "1.0.1"
+  def doc_items_fixture(num_items) do
+    package = package_fixture()
+
+    for i <- 1..num_items do
+      Search.Repo.insert!(%Search.Packages.DocItem{
+        title: "Module doc title",
+        ref: "Test ref",
+        doc: "Text #{i}",
+        type: "module",
+        package: package
       })
+    end
+  end
 
-    fragments =
-      for i <- 1..num_fragments do
-        item =
-          Search.Repo.insert!(%Search.Packages.DocItem{
-            title: "Module doc title",
-            ref: "Test ref",
-            doc: "Text #{i}",
-            type: "module",
-            package: package
-          })
+  def doc_fragments_fixture(num_fragments) do
+    items = doc_items_fixture(num_fragments)
 
-        fragment =
-          Search.Repo.insert!(%Search.Packages.DocFragment{
-            text: "Preprocessed text #{i}",
-            doc_item: item
-          })
-
-        fragment
-      end
-
-    fragments
+    for item <- items do
+      Search.Repo.insert!(%Search.Packages.DocFragment{
+        text: "Preprocessed text: #{item.doc}",
+        doc_item: item
+      })
+    end
   end
 end

@@ -9,7 +9,7 @@ defmodule Search.Packages.DocItem do
     field :ref, :string
     field :doc, :string
     belongs_to :package, Packages.Package
-    has_many :doc_fragments, Packages.DocFragment
+    has_many :doc_fragments, Packages.DocFragment, on_replace: :delete
 
     timestamps(type: :utc_datetime)
   end

@@ -6,7 +6,7 @@ defmodule Search.Packages.Package do
   schema "packages" do
     field :name, :string
     field :version, :string
-    has_many :doc_items, Packages.DocItem
+    has_many :doc_items, Packages.DocItem, on_replace: :delete
 
     timestamps(type: :utc_datetime)
   end

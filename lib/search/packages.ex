@@ -25,17 +25,30 @@ defmodule Search.Packages do
   end
 
   def add_package(%HexClient.Release{package_name: package_name, version: version} = release) do
+    version = Version.to_string(version)
+
     with {:ok, docs} <- HexClient.get_docs_tarball(release),
          {:ok, search_data} <- ExDocParser.extract_search_data(docs) do
       Repo.transaction(fn ->
-        case create_package(%{name: package_name, version: Version.to_string(version)}) do
-          {:ok, package} ->
-            {items, fragments} =
-              create_items_from_package(package, search_data)
-              |> Enum.unzip()
+        package =
+          case Repo.get_by(Package, name: package_name) do
+            nil ->
+              %Package{name: package_name, version: version}
 
-            {package, items, fragments}
+            existing ->
+              existing
+          end
+          |> Repo.preload(:doc_items)
+          |> Package.changeset(%{
+            version: version
+          })
+          |> Ecto.Changeset.put_assoc(:doc_items, [])
+          |> Repo.insert_or_update()
 
+        with {:ok, package} <- package,
+             :ok <- create_items_from_package(package, search_data) do
+          package
+        else
           {:error, err} ->
             Repo.rollback(err)
         end
@@ -49,16 +62,17 @@ defmodule Search.Packages do
     for %{"doc" => doc, "title" => title, "ref" => ref, "type" => type} <- search_data do
       with {:ok, item} <-
              create_doc_item(package, %{doc: doc, title: title, ref: ref, type: type}),
-           {:ok, fragment} <-
+           {:ok, _fragment} <-
              create_doc_fragment(item, %{
                text: "# #{title}\n\n#{doc}"
              }) do
-        {item, fragment}
       else
         {:error, err} ->
           Repo.rollback(err)
       end
     end
+
+    :ok
   end
 
   @doc """

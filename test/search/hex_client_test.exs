@@ -45,7 +45,7 @@ defmodule Search.HexClientTest do
 
       rel = %HexClient.Release{
         package_name: "test_package",
-        version: Version.parse!("1.2.3"),
+        version: Version.parse!("1.2.3")
       }
 
       assert HexClient.get_docs_tarball(rel) == {:ok, test_tar_contents}
@@ -58,7 +58,7 @@ defmodule Search.HexClientTest do
 
       rel = %HexClient.Release{
         package_name: "test_package",
-        version: Version.parse!("1.2.3"),
+        version: Version.parse!("1.2.3")
       }
 
       assert HexClient.get_docs_tarball(rel) == {:error, "HTTP 403"}

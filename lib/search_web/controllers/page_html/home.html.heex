@@ -1,6 +1,13 @@
 <.simple_form for={@form} class="bg-transparent" action="/search" method="get">
   <.input field={@form[:search_text]} label="Search prompt" required />
   <.input field={@form[:k]} type="number" label="Number of entries" required min="1" value="10" />
+  <.input
+    field={@form[:embedding_model]}
+    label="Embedding model"
+    type="select"
+    options={@embedding_models}
+    required
+  />
   <:actions>
     <.button>Search</.button>
   </:actions>

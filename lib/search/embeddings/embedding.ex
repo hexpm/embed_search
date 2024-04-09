@@ -72,7 +72,11 @@ defmodule Search.Embeddings.Embedding do
         |> Nx.Serving.child_spec()
       end
 
-      def embed() do
+      @doc """
+      Embeds any doc fragments which do not have an embedding yet. Recieves an optional callback,
+      which is called to notify about the embedding progress with the tuple {total, done} as its argument.
+      """
+      def embed(progress_callback \\ &Function.identity/1) do
         fragments =
           from f in Packages.DocFragment,
             left_join: e in __MODULE__,
@@ -81,33 +85,43 @@ defmodule Search.Embeddings.Embedding do
 
         fragments = Repo.all(fragments)
 
-        fragment_texts = fragments |> unquote(text_batching)
+        if fragments == [] do
+          {:ok, []}
+        else
+          fragments_count = length(fragments)
 
-        embeddings =
-          fragment_texts
-          |> Stream.with_index(1)
-          |> Stream.flat_map(fn {text, index} ->
-            embeddings = Nx.Serving.batched_run(__MODULE__, text)
+          fragment_texts = fragments |> unquote(text_batching)
 
-            case embeddings do
-              %{embedding: embedding} ->
-                embedding
+          embeddings =
+            fragment_texts
+            |> Stream.with_index(1)
+            |> Stream.flat_map(fn {text, index} ->
+              embeddings = Nx.Serving.batched_run(__MODULE__, text)
 
-              _ when is_list(embeddings) ->
-                Stream.map(embeddings, & &1.embedding)
-            end
+              progress_callback.({fragments_count, min(index * batch_size(), fragments_count)})
+
+              case embeddings do
+                %{embedding: embedding} ->
+                  embedding
+
+                _ when is_list(embeddings) ->
+                  Stream.map(embeddings, & &1.embedding)
+              end
+            end)
+
+          progress_callback.({fragments_count, 0})
+
+          Repo.transaction(fn ->
+            [fragments, embeddings]
+            |> Stream.zip()
+            |> Enum.map(fn {fragment, embedding} ->
+              Repo.insert!(%__MODULE__{
+                embedding: embedding,
+                doc_fragment: fragment
+              })
+            end)
           end)
-
-        Repo.transaction(fn ->
-          [fragments, embeddings]
-          |> Stream.zip()
-          |> Enum.map(fn {fragment, embedding} ->
-            Repo.insert!(%__MODULE__{
-              embedding: embedding,
-              doc_fragment: fragment
-            })
-          end)
-        end)
+        end
       end
 
       defp load_model do

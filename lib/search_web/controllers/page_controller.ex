@@ -8,7 +8,7 @@ defmodule SearchWeb.PageController do
               })
 
   @embedding_model_opts Search.Application.embedding_models()
-                        |> Enum.map(&(&1 |> Module.split() |> Enum.reverse() |> Enum.at(0)))
+                        |> Keyword.keys()
 
   def home(conn, _params) do
     # The home page is often custom made,
@@ -20,11 +20,7 @@ defmodule SearchWeb.PageController do
         conn,
         %{"k" => k, "search_text" => search_text, "embedding_model" => embedding_model} = params
       ) do
-    model =
-      Enum.find(Search.Application.embedding_models(), fn mod ->
-        "Elixir.Search.Embeddings.#{embedding_model}" == "#{mod}"
-      end)
-
+    embedding_model = String.to_existing_atom(embedding_model)
     k = String.to_integer(k)
     search_text = String.trim(search_text)
 
@@ -36,10 +32,10 @@ defmodule SearchWeb.PageController do
       end
 
     if errors == [] do
-      %{embedding: query_tensor} = Nx.Serving.batched_run(model, search_text)
+      query_tensor = Search.Embeddings.embed_one(embedding_model, search_text)
 
       items =
-        Search.Embeddings.knn_query(model, query_tensor, k: k)
+        Search.Embeddings.knn_query(embedding_model, query_tensor, k: k)
         |> Stream.map(& &1.doc_fragment.doc_item)
         |> Enum.uniq_by(& &1.id)
 

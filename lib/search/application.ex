@@ -5,8 +5,9 @@ defmodule Search.Application do
 
   use Application
 
-  def embedding_models,
-    do: [Search.Embeddings.ParaphraseL3, Search.Embeddings.ParaphraseAlbertSmall]
+  def embedding_models do
+    Application.fetch_env!(:search, :embedding_providers)
+  end
 
   @impl true
   def start(_type, _args) do
@@ -17,7 +18,7 @@ defmodule Search.Application do
         {DNSCluster, query: Application.get_env(:search, :dns_cluster_query) || :ignore},
         {Phoenix.PubSub, name: Search.PubSub}
       ] ++
-        Enum.map(embedding_models(), &{&1, name: &1}) ++
+        Enum.map(embedding_models(), fn {_, {provider, opts}} -> provider.child_spec(opts) end) ++
         [
           # Start to serve requests, typically the last entry
           SearchWeb.Endpoint

@@ -59,19 +59,19 @@ defmodule Search.Embeddings.BumblebeeProvider do
 
       now = DateTime.utc_now(:second)
 
-      Repo.transaction(fn ->
-        embeddings_params =
-          [fragments, embeddings]
-          |> Stream.zip()
-          |> Enum.map(fn {fragment, embedding} ->
-            %{
-              embedding: embedding,
-              doc_fragment_id: fragment.id,
-              inserted_at: now,
-              updated_at: now
-            }
-          end)
+      embeddings_params =
+        [fragments, embeddings]
+        |> Stream.zip()
+        |> Enum.map(fn {fragment, embedding} ->
+          %{
+            embedding: embedding,
+            doc_fragment_id: fragment.id,
+            inserted_at: now,
+            updated_at: now
+          }
+        end)
 
+      Repo.transaction(fn ->
         {inserted, embeddings} =
           Repo.insert_all(
             {table_name, Embeddings.Embedding},

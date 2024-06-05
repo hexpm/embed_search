@@ -10,13 +10,15 @@ defmodule Search.Packages do
   alias Search.{HexClient, ExDocParser}
 
   @doc """
-  If given a package name, adds the latest version of the package to the app. If given a `#{HexClient.Release}` adds
+  Adds the package to be indexed by the application.
+
+  If given a package name, adds the latest version of the package to the app. If given a `%HexClient.Release{}` adds
   the specified release. Does not embed it yet.
   """
   def add_package(package_name) when is_binary(package_name) do
     case HexClient.get_releases(package_name) do
       {:ok, releases} ->
-        latest = Enum.max_by(releases, & &1.version, Version)
+        latest = find_latest_release(releases)
         add_package(latest)
 
       err ->
@@ -55,6 +57,50 @@ defmodule Search.Packages do
       end)
     else
       err -> err
+    end
+  end
+
+  defp find_latest_release([]), do: nil
+
+  defp find_latest_release([%HexClient.Release{} = releases_head | releases_tail]) do
+    if releases_head.version.pre do
+      find_latest_release(releases_tail, nil, releases_head, true)
+    else
+      find_latest_release(releases_tail, releases_head, nil, false)
+    end
+  end
+
+  defp find_latest_release([], latest_release, latest_pre, all_pre?) do
+    if all_pre? do
+      latest_pre
+    else
+      latest_release
+    end
+  end
+
+  defp find_latest_release(
+         [%HexClient.Release{version: head_version} = releases_head | releases_tail],
+         latest_release,
+         latest_pre,
+         all_pre?
+       ) do
+    cond do
+      head_version.pre and
+          (is_nil(latest_pre) or Version.compare(head_version, latest_pre.version) == :gt) ->
+        # there is a new latest prerelease
+        find_latest_release(releases_tail, latest_release, releases_head, all_pre?)
+
+      is_nil(latest_release) or Version.compare(head_version, latest_release.version) == :gt ->
+        # there is a new latest release, we can be sure there are no longer only prerelease entries
+        find_latest_release(releases_tail, releases_head, latest_pre, false)
+
+      head_version.pre ->
+        # not a new latest prerelease, but a prerelease nonetheless
+        find_latest_release(releases_tail, latest_release, latest_pre, all_pre?)
+
+      true ->
+        # not a new latest release, but we are sure there is at least one non-prerelease entry
+        find_latest_release(releases_tail, latest_release, latest_pre, false)
     end
   end
 

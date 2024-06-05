@@ -27,7 +27,7 @@ defmodule Search.Packages do
 
     with {:ok, docs} <- HexClient.get_docs_tarball(release),
          {:ok, search_data} <- ExDocParser.extract_search_data(docs) do
-      Repo.transaction(fn ->
+      Repo.transaction_with(fn ->
         package =
           case Repo.get_by(Package, name: package_name) do
             nil ->
@@ -43,12 +43,13 @@ defmodule Search.Packages do
           |> Ecto.Changeset.put_assoc(:doc_items, [])
           |> Repo.insert_or_update()
 
-        with {:ok, package} <- package,
-             :ok <- create_items_from_package(package, search_data) do
-          package
-        else
-          {:error, err} ->
-            Repo.rollback(err)
+        case package do
+          {:ok, package} ->
+            :ok = create_items_from_package(package, search_data)
+            {:ok, package}
+
+          {:error, _} = err ->
+            err
         end
       end)
     else

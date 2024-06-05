@@ -2,7 +2,7 @@ defmodule Mix.Tasks.Search.Embed do
   @moduledoc """
   Usage: mix #{Mix.Task.task_name(__MODULE__)} <MODULE>
 
-  Embeds the unembedded docs using the given model given as `Search.Embeddings.<MODULE>`
+  Embeds the unembedded docs using the model registered in the config
   """
   @shortdoc "Embeds the unembedded doc fragments"
 
@@ -15,17 +15,8 @@ defmodule Mix.Tasks.Search.Embed do
   end
 
   @impl Mix.Task
-  def run([module_str]) do
-    module =
-      Enum.find(Search.Application.embedding_models(), fn mod ->
-        "Elixir.Search.Embeddings.#{module_str}" == "#{mod}"
-      end)
-
-    if module do
-      {:ok, _} = module.embed(&callback/1)
-      Mix.shell().info("Done.")
-    else
-      Mix.shell().error("Could not find embedding module #{module_str}.")
-    end
+  def run([module_key]) do
+    Search.Embeddings.embed(String.to_existing_atom(module_key), &callback/1)
+    Mix.shell().info("Done.")
   end
 end

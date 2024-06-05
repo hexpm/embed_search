@@ -2,6 +2,7 @@ defmodule Search.PackagesTest do
   use Search.DataCase
 
   alias Search.Packages
+
   import Search.PackagesFixtures
 
   describe "doc_fragments" do

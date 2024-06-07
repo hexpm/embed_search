@@ -1,6 +1,6 @@
 defmodule Mix.Tasks.Search.Embed do
   @moduledoc """
-  Usage: mix #{Mix.Task.task_name(__MODULE__)} <MODULE>
+  Usage: mix #{Mix.Task.task_name(__MODULE__)} <MODEL_NAME>
 
   Embeds the unembedded docs using the model registered in the config
   """
@@ -15,8 +15,17 @@ defmodule Mix.Tasks.Search.Embed do
   end
 
   @impl Mix.Task
-  def run([module_key]) do
-    Search.Embeddings.embed(String.to_existing_atom(module_key), &callback/1)
-    Mix.shell().info("Done.")
+  def run([model_name]) do
+    embedding_models =
+      Search.Application.embedding_models()
+      |> Keyword.keys()
+      |> Enum.map(&Atom.to_string/1)
+
+    if Enum.member?(embedding_models, model_name) do
+      Search.Embeddings.embed(String.to_existing_atom(model_name), &callback/1)
+      Mix.shell().info("Done.")
+    else
+      Mix.shell().error("Expected model name to be one of: #{Enum.join(embedding_models, ", ")}.")
+    end
   end
 end

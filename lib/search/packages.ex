@@ -41,13 +41,11 @@ defmodule Search.Packages do
             version: version
           })
           |> Ecto.Changeset.put_assoc(:doc_items, [])
-          |> Repo.insert_or_update()
 
-        case package do
-          {:ok, package} ->
-            :ok = create_items_from_package(package, search_data)
-            {:ok, package}
-
+        with {:ok, package} <- Repo.insert_or_update(package),
+             :ok <- create_items_from_package(package, search_data) do
+          {:ok, package}
+        else
           {:error, _} = err ->
             err
         end
@@ -57,21 +55,22 @@ defmodule Search.Packages do
     end
   end
 
-  defp create_items_from_package(%Package{} = package, search_data) do
-    for %{"doc" => doc, "title" => title, "ref" => ref, "type" => type} <- search_data do
-      with {:ok, item} <-
-             create_doc_item(package, %{doc: doc, title: title, ref: ref, type: type}),
-           {:ok, _fragment} <-
-             create_doc_fragment(item, %{
-               text: "# #{title}\n\n#{doc}"
-             }) do
-      else
-        {:error, err} ->
-          Repo.rollback(err)
-      end
-    end
+  defp create_items_from_package(%Package{} = _package, []), do: :ok
 
-    :ok
+  defp create_items_from_package(%Package{} = package, [search_data_head | search_data_tail]) do
+    %{"doc" => doc, "title" => title, "ref" => ref, "type" => type} = search_data_head
+
+    with {:ok, item} <-
+           create_doc_item(package, %{doc: doc, title: title, ref: ref, type: type}),
+         {:ok, _fragment} <-
+           create_doc_fragment(item, %{
+             text: "# #{title}\n\n#{doc}"
+           }) do
+      create_items_from_package(package, search_data_tail)
+    else
+      {:error, _} = err ->
+        err
+    end
   end
 
   def create_doc_fragment(%DocItem{id: item_id} = _doc_item, attrs) do

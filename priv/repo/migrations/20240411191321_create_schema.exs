@@ -28,14 +28,14 @@ defmodule Search.Repo.Migrations.CreateSchema do
       timestamps(type: :utc_datetime)
     end
 
-    create table(:paraphrase_l3_embeddings) do
+    create table(:embeddings__paraphrase_l3) do
       add :embedding, :vector, size: 384, null: false
       add :doc_fragment_id, references("doc_fragments", on_delete: :delete_all), null: false
 
       timestamps(type: :utc_datetime)
     end
 
-    create table(:paraphrase_albert_small_embeddings) do
+    create table(:embeddings__paraphrase_albert_small) do
       add :embedding, :vector, size: 768, null: false
       add :doc_fragment_id, references("doc_fragments", on_delete: :delete_all), null: false
 

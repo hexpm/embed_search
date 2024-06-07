@@ -19,7 +19,6 @@ config :search, :embedding_providers,
   paraphrase_l3: {
     Search.Embeddings.BumblebeeProvider,
     serving_name: Search.Embeddings.ParaphraseL3,
-    table_name: "paraphrase_l3_embeddings",
     model: {:hf, "sentence-transformers/paraphrase-MiniLM-L3-v2"},
     embedding_size: 384,
     load_model_opts: [
@@ -33,7 +32,6 @@ config :search, :embedding_providers,
   paraphrase_albert_small: {
     Search.Embeddings.BumblebeeProvider,
     serving_name: Search.Embeddings.ParaphraseAlbertSmall,
-    table_name: "paraphrase_albert_small_embeddings",
     model: {:hf, "sentence-transformers/paraphrase-albert-small-v2"},
     embedding_size: 768,
     load_model_opts: [

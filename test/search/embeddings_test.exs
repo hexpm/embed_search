@@ -10,8 +10,10 @@ defmodule Search.EmbeddingsTest do
     {_, config} =
       Application.fetch_env!(:search, :embedding_providers) |> Keyword.fetch!(:paraphrase_l3)
 
-    %{table_name: table_name, embedding_size: embedding_size} =
+    %{embedding_size: embedding_size} =
       Map.new(config)
+
+    table_name = Embeddings.table_name(:paraphrase_l3)
 
     {embeddings, rng_key} =
       Nx.Random.normal(Nx.Random.key(42), shape: {4, embedding_size})

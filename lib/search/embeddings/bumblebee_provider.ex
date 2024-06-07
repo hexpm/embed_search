@@ -1,6 +1,5 @@
 defmodule Search.Embeddings.BumblebeeProvider do
-  alias Search.{Embeddings, Packages, Repo}
-  import Ecto.Query
+  alias Search.Embeddings
 
   @behaviour Embeddings.Provider
 
@@ -19,73 +18,32 @@ defmodule Search.Embeddings.BumblebeeProvider do
   end
 
   @impl true
-  def embed(progress_callback, opts) do
-    %{table_name: table_name, serving_name: serving_name} =
+  def embed([] = _text_list, _progress_callback, _opts), do: []
+  @impl true
+  def embed(text_list, progress_callback, opts) do
+    %{serving_name: serving_name} =
       parse_opts(opts)
 
-    fragments =
-      from f in Packages.DocFragment,
-        left_join: e in ^{table_name, Embeddings.Embedding},
-        on: e.doc_fragment_id == f.id,
-        where: is_nil(e)
+    texts_count = length(text_list)
 
-    fragments = Repo.all(fragments)
+    batch_size =
+      get_batch_size(opts)
 
-    if fragments == [] do
-      {:ok, []}
-    else
-      fragments_count = length(fragments)
+    progress_callback.({texts_count, 0})
 
-      batch_size =
-        get_batch_size(opts)
-
-      fragment_texts =
-        fragments
-        |> Stream.map(& &1.text)
-        |> Stream.chunk_every(batch_size)
-
+    text_list
+    |> Stream.chunk_every(batch_size)
+    |> Stream.with_index(1)
+    |> Stream.map(fn {texts, batch_num} ->
       embeddings =
-        fragment_texts
-        |> Stream.with_index(1)
-        |> Stream.flat_map(fn {texts, index} ->
-          embeddings = Nx.Serving.batched_run(serving_name, texts)
+        Nx.Serving.batched_run(serving_name, texts)
+        |> Enum.map(& &1.embedding)
 
-          progress_callback.({fragments_count, min(index * batch_size, fragments_count)})
+      progress_callback.({texts_count, min(texts_count, batch_num * batch_size)})
 
-          Stream.map(embeddings, & &1.embedding)
-        end)
-
-      progress_callback.({fragments_count, 0})
-
-      now = DateTime.utc_now(:second)
-
-      embeddings_params =
-        [fragments, embeddings]
-        |> Stream.zip()
-        |> Enum.map(fn {fragment, embedding} ->
-          %{
-            embedding: embedding,
-            doc_fragment_id: fragment.id,
-            inserted_at: now,
-            updated_at: now
-          }
-        end)
-
-      Repo.transaction(fn ->
-        {inserted, embeddings} =
-          Repo.insert_all(
-            {table_name, Embeddings.Embedding},
-            embeddings_params,
-            returning: true
-          )
-
-        if inserted == fragments_count do
-          embeddings
-        else
-          Repo.rollback("Could not insert all embeddings")
-        end
-      end)
-    end
+      embeddings
+    end)
+    |> Enum.flat_map(&Function.identity/1)
   end
 
   defp get_batch_size(opts) do
@@ -99,7 +57,6 @@ defmodule Search.Embeddings.BumblebeeProvider do
     opts
     |> Keyword.validate!([
       :model,
-      :table_name,
       :serving_name,
       :embedding_size,
       :serving_opts,

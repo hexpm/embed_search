@@ -45,13 +45,8 @@ defmodule Search.Packages do
         with {:ok, package} <- Repo.insert_or_update(package),
              :ok <- create_items_from_package(package, search_data) do
           {:ok, package}
-        else
-          {:error, _} = err ->
-            err
         end
       end)
-    else
-      err -> err
     end
   end
 
@@ -67,9 +62,6 @@ defmodule Search.Packages do
              text: "# #{title}\n\n#{doc}"
            }) do
       create_items_from_package(package, search_data_tail)
-    else
-      {:error, _} = err ->
-        err
     end
   end
 

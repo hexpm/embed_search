@@ -26,7 +26,7 @@ defmodule Search.HexClient do
           _release
       ) do
     with {:ok, %{status: 200, body: body}} <- get("docs/#{package_name}-#{version}.tar.gz"),
-         {:ok, untarred} = :erl_tar.extract({:binary, body}, [:compressed, :memory]) do
+         {:ok, untarred} <- :erl_tar.extract({:binary, body}, [:compressed, :memory]) do
       {:ok, untarred}
     else
       {:error, ex} when is_exception(ex) ->

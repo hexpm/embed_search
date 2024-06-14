@@ -16,8 +16,14 @@ defmodule Search.HexClient do
 
         {:ok, res}
 
-      {:error, reason} ->
-        {:error, Exception.message(reason)}
+      {:ok, %{status: status}} ->
+        {:error, "HTTP #{status}"}
+
+      {:error, ex} when is_exception(ex) ->
+        {:error, Exception.message(ex)}
+
+      err ->
+        err
     end
   end
 
@@ -25,10 +31,13 @@ defmodule Search.HexClient do
         %HexClient.Release{package_name: package_name, version: version} =
           _release
       ) do
-    with {:ok, %{status: 200, body: body}} <- get("docs/#{package_name}-#{version}.tar.gz"),
-         {:ok, untarred} <- :erl_tar.extract({:binary, body}, [:compressed, :memory]) do
-      {:ok, untarred}
-    else
+    case get("docs/#{package_name}-#{version}.tar.gz") do
+      {:ok, %{status: 200, body: body}} ->
+        {:ok, body}
+
+      {:ok, %{status: status}} ->
+        {:error, "HTTP #{status}"}
+
       {:error, ex} when is_exception(ex) ->
         {:error, Exception.message(ex)}
 
@@ -43,15 +52,6 @@ defmodule Search.HexClient do
     |> Keyword.merge(url: "#{@repo_url}/#{resource}")
     |> Req.new()
     |> ReqHex.attach()
-    |> Req.Request.prepend_response_steps(
-      handle_errors: fn {req, res} ->
-        # Looks like ReqHex fails in zlib on non-200 codes, so these are handled here
-        case res do
-          %{status: 200} -> {req, res}
-          %{status: status} -> {Req.Request.halt(req), RuntimeError.exception("HTTP #{status}")}
-        end
-      end
-    )
     |> Req.request()
   end
 end

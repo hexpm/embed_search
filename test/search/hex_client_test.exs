@@ -22,34 +22,6 @@ defmodule Search.HexClientTest do
   end
 
   describe "get_releases/1" do
-    test "when given a well-formed package JSON, successfuly parses the releases" do
-      Req.Test.stub(HexClient, fn conn ->
-        Req.Test.json(conn, %{
-          "releases" => [
-            %{"version" => "1.2.3", "has_docs" => true},
-            %{"version" => "1.1.25", "has_docs" => false}
-          ]
-        })
-      end)
-
-      package_name = "test_package"
-
-      assert HexClient.get_releases(package_name) ==
-               {:ok,
-                [
-                  %HexClient.Release{
-                    package_name: package_name,
-                    version: Version.parse!("1.2.3"),
-                    has_docs: true
-                  },
-                  %HexClient.Release{
-                    package_name: package_name,
-                    version: Version.parse!("1.1.25"),
-                    has_docs: false
-                  }
-                ]}
-    end
-
     test "when getting a response other than 200 OK, should fail gracefully" do
       Req.Test.stub(HexClient, fn conn ->
         Plug.Conn.send_resp(conn, 403, "Forbidden")
@@ -73,21 +45,10 @@ defmodule Search.HexClientTest do
 
       rel = %HexClient.Release{
         package_name: "test_package",
-        version: Version.parse!("1.2.3"),
-        has_docs: true
+        version: Version.parse!("1.2.3")
       }
 
       assert HexClient.get_docs_tarball(rel) == {:ok, test_tar_contents}
-    end
-
-    test "when given a release with no documentation, should return error" do
-      rel = %HexClient.Release{
-        package_name: "test_package",
-        version: Version.parse!("1.2.3"),
-        has_docs: false
-      }
-
-      assert HexClient.get_docs_tarball(rel) == {:error, "Package release has no documentation."}
     end
 
     test "when getting a response other than 200 OK, should fail gracefully" do
@@ -97,8 +58,7 @@ defmodule Search.HexClientTest do
 
       rel = %HexClient.Release{
         package_name: "test_package",
-        version: Version.parse!("1.2.3"),
-        has_docs: true
+        version: Version.parse!("1.2.3")
       }
 
       assert HexClient.get_docs_tarball(rel) == {:error, "HTTP 403"}

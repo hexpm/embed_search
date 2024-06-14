@@ -14,6 +14,35 @@ config :search,
 # Add types added by the pgvector-elixir extension to Postgrex
 config :search, Search.Repo, types: Search.PostgrexTypes
 
+# Register embedding providers
+config :search, :embedding_providers,
+  paraphrase_l3: {
+    Search.Embeddings.BumblebeeProvider,
+    serving_name: Search.Embeddings.ParaphraseL3,
+    model: {:hf, "sentence-transformers/paraphrase-MiniLM-L3-v2"},
+    embedding_size: 384,
+    load_model_opts: [
+      backend: EXLA.Backend
+    ],
+    serving_opts: [
+      compile: [batch_size: 16, sequence_length: 512],
+      defn_options: [compiler: EXLA]
+    ]
+  },
+  paraphrase_albert_small: {
+    Search.Embeddings.BumblebeeProvider,
+    serving_name: Search.Embeddings.ParaphraseAlbertSmall,
+    model: {:hf, "sentence-transformers/paraphrase-albert-small-v2"},
+    embedding_size: 768,
+    load_model_opts: [
+      backend: EXLA.Backend
+    ],
+    serving_opts: [
+      compile: [batch_size: 16, sequence_length: 100],
+      defn_options: [compiler: EXLA]
+    ]
+  }
+
 # Configures the endpoint
 config :search, SearchWeb.Endpoint,
   url: [host: "localhost"],
@@ -56,7 +85,7 @@ config :logger, :console,
 config :phoenix, :json_library, Jason
 
 # Configure the EXLA backend for Nx
-config :nx, :default_backend, EXLA.Backend
+config :nx, :default_backend, {EXLA.Backend, client: :host}
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

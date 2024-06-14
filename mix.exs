@@ -58,9 +58,10 @@ defmodule Search.MixProject do
       {:pgvector, "~> 0.2.0"},
       {:bumblebee, "~> 0.5.3"},
       {:exla, ">= 0.0.0"},
-      {:req, "~> 0.4.0"},
+      {:req, "~> 0.5.0"},
       {:progress_bar, "> 0.0.0"},
-      {:earmark, "~> 1.4.46"}
+      {:earmark, "~> 1.4.46"},
+      {:req_hex, "~> 0.2.0"}
     ]
   end
 

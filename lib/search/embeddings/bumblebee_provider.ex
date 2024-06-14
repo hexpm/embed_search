@@ -7,7 +7,7 @@ defmodule Search.Embeddings.BumblebeeProvider do
   def child_spec(opts) do
     %{serving_name: serving_name} = parse_opts(opts)
 
-    {Nx.Serving, serving: load_model(opts), name: serving_name, batch_size: get_batch_size(opts)}
+    {Nx.Serving, serving: load_model(opts), name: serving_name}
   end
 
   @impl true

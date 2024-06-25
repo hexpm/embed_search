@@ -15,7 +15,6 @@ defmodule Search.Repo.Migrations.CreateSchema do
       add :ref, :string, null: false
       add :type, :string, null: false
       add :title, :string, null: false
-      add :doc, :text
       add :package_id, references("packages", on_delete: :delete_all), null: false
 
       timestamps(type: :utc_datetime)
@@ -23,6 +22,7 @@ defmodule Search.Repo.Migrations.CreateSchema do
 
     create table(:doc_fragments) do
       add :text, :text, null: false
+      add :order, :integer, null: false
       add :doc_item_id, references("doc_items", on_delete: :delete_all), null: false
 
       timestamps(type: :utc_datetime)

@@ -5,6 +5,8 @@ defmodule Search.Packages.DocFragment do
 
   schema "doc_fragments" do
     field :text, :string
+    field :order, :integer
+
     belongs_to :doc_item, Packages.DocItem
 
     timestamps(type: :utc_datetime)
@@ -13,8 +15,8 @@ defmodule Search.Packages.DocFragment do
   @doc false
   def changeset(doc_fragment, attrs) do
     doc_fragment
-    |> cast(attrs, [:text])
+    |> cast(attrs, [:text, :order])
     |> cast_assoc(:doc_item)
-    |> validate_required([:text])
+    |> validate_required([:text, :order])
   end
 end

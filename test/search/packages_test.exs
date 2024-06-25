@@ -12,7 +12,8 @@ defmodule Search.PackagesTest do
       [item] = doc_items_fixture(1)
 
       valid_attrs = %{
-        text: "Some text"
+        text: "Some text",
+        order: 0
       }
 
       assert {:ok, %DocFragment{} = fragment} = Packages.create_doc_fragment(item, valid_attrs)
@@ -38,14 +39,12 @@ defmodule Search.PackagesTest do
       valid_attrs = %{
         title: "Some title",
         type: "module",
-        doc: "Some doc",
         ref: "Some ref"
       }
 
       assert {:ok, %DocItem{} = item} = Packages.create_doc_item(package, valid_attrs)
       assert item.title == valid_attrs.title
       assert item.type == valid_attrs.type
-      assert item.doc == valid_attrs.doc
       assert item.ref == valid_attrs.ref
       item = Repo.preload(item, :package)
       assert item.package.id == package.id

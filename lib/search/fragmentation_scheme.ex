@@ -21,14 +21,9 @@ defmodule Search.FragmentationScheme do
   defp do_split(text, acc, max_size) do
     # capture the next word along with trailing whitespace and leading whitespace, if any
     next_word =
-      Regex.run(~r/^([\s]*[^\s]+\s+)[^\s]*/, text)
-
-    next_word =
-      if is_nil(next_word) do
-        text
-      else
-        Enum.min_by(next_word, &byte_size/1)
-      end
+      (Regex.run(~r/^([\s]*[^\s]+\s+)[^\s]*/, text) ||
+         [text])
+      |> Enum.min_by(&byte_size/1)
 
     word_chunks =
       if byte_size(next_word) > max_size do

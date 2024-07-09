@@ -16,6 +16,8 @@ defmodule Search.FragmentationScheme do
     end
   end
 
+  def recombine(chunks), do: Enum.join(chunks)
+
   defp do_split("", acc, _max_size), do: Enum.reverse(acc)
 
   defp do_split(text, acc, max_size) do

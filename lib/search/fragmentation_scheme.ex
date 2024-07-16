@@ -9,7 +9,10 @@ defmodule Search.FragmentationScheme do
   * `:max_size` - maximum byte_size of the output binaries. The output binaries may have size less or equal to that
     value, which also should guarantee the sequence length after tokenization will be bounded by this value.
   """
-  def split(text, opts \\ []) when is_binary(text) do
+  def split(text, opts \\ [])
+  def split("", _opts), do: []
+
+  def split(text, opts) when is_binary(text) do
     case Keyword.get(opts, :max_size) do
       nil -> [text]
       max_size -> do_split(text, [], max_size)
@@ -22,10 +25,9 @@ defmodule Search.FragmentationScheme do
 
   defp do_split(text, acc, max_size) do
     # capture the next word along with trailing whitespace and leading whitespace, if any
-    next_word =
-      (Regex.run(~r/^([\s]*[^\s]+\s+)[^\s]*/, text) ||
-         [text])
-      |> Enum.min_by(&byte_size/1)
+    [next_word] =
+      Regex.run(~r/^([\s]*[^\s]+\s+)[^\s]*/, text, capture: :all_but_first) ||
+        [text]
 
     word_chunks =
       if byte_size(next_word) > max_size do

@@ -60,4 +60,24 @@ defmodule Search.FragmentationSchemeTest do
       ]
     end
   end
+
+  describe "recombine/1" do
+    test "recreates the original text" do
+      str = """
+      Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+
+      Phasellus convallis libero at lectus vestibulum, sit amet mattis leo tempor.
+
+      Aenean pulvinar purus ac euismod accumsan.
+
+      Cras finibus risus laoreet neque condimentum, nec hendrerit justo blandit.
+
+      Sed vitae orci ut odio pellentesque cursus.
+      """
+
+      split = FragmentationScheme.split(str, max_size: 100)
+
+      assert FragmentationScheme.recombine(split) == str
+    end
+  end
 end

@@ -38,6 +38,15 @@ defmodule SearchWeb.PageController do
         Search.Embeddings.knn_query(embedding_model, query_tensor, k: k)
         |> Stream.map(& &1.doc_fragment.doc_item)
         |> Enum.uniq_by(& &1.id)
+        |> Search.Repo.preload(:doc_fragments)
+        |> Stream.map(fn item ->
+          doc_content =
+            item.doc_fragments
+            |> Enum.map(& &1.text)
+            |> Search.FragmentationScheme.recombine()
+
+          {item, doc_content}
+        end)
 
       render(conn, :search, items: items)
     else

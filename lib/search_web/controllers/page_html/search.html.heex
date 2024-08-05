@@ -1,6 +1,4 @@
-<div :for={item <- @items} class="bg-gray-100 p-4 m-4 rounded">
+<div :for={{item, doc_content} <- @items} class="bg-gray-100 p-4 m-4 rounded">
   <p class="text-lg font-bold"><%= item.title %></p>
-  <%= if item.doc do %>
-    <%= raw(Earmark.as_html!(item.doc)) %>
-  <% end %>
+  <%= raw(Earmark.as_html!(doc_content)) %>
 </div>

@@ -5,7 +5,7 @@ defmodule Search.HexClient do
 
   def get_releases(package_name) when is_binary(package_name) do
     case get("packages/#{package_name}") do
-      {:ok, %{status: 200, body: releases}} ->
+      {:ok, %{status: 200, body: %{releases: releases}}} ->
         res =
           for %{version: version} <- releases do
             %HexClient.Release{

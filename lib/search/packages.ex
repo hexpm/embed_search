@@ -17,7 +17,6 @@ defmodule Search.Packages do
   def add_package(package_name, opts) when is_binary(package_name) do
     case HexClient.get_releases(package_name) do
       {:ok, releases} ->
-
         latest = HexClient.Release.latest(releases)
         add_package(latest, opts)
 

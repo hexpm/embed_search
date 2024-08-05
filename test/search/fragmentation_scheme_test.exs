@@ -26,38 +26,38 @@ defmodule Search.FragmentationSchemeTest do
       str = "word\nword\tword\u{2003}word"
 
       assert FragmentationScheme.split(str, max_size: 7) == [
-        "word\n",
-        "word\t",
-        "word\u{2003}",
-        "word"
-      ]
+               "word\n",
+               "word\t",
+               "word\u{2003}",
+               "word"
+             ]
     end
 
     test "when splitting along whitespace and the text starts with whitespace, the whitespace characters are prepended to the first fragment" do
       str = "    words and some more words"
 
       assert FragmentationScheme.split(str, max_size: 15) == [
-        "    words and ",
-        "some more words"
-      ]
+               "    words and ",
+               "some more words"
+             ]
     end
 
     test "when cannot split along whitespace, splits along grapheme boundaries" do
       str1 = "asdfghjkl"
 
       assert FragmentationScheme.split(str1, max_size: 5) == [
-        "asdfg",
-        "hjkl"
-      ]
+               "asdfg",
+               "hjkl"
+             ]
 
       # the "g" has a bunch of diacritics, which means the grapheme is 4 codepoints / 7 bytes long
       str2 = "asdfg\u{0300}\u{0322}\u{0342}hjkl"
 
       assert FragmentationScheme.split(str2, max_size: 7) == [
-        "asdf",
-        "g\u{0300}\u{0322}\u{0342}",
-        "hjkl"
-      ]
+               "asdf",
+               "g\u{0300}\u{0322}\u{0342}",
+               "hjkl"
+             ]
     end
   end
 

@@ -42,6 +42,7 @@ defmodule SearchWeb.PageController do
         |> Stream.map(fn item ->
           doc_content =
             item.doc_fragments
+            |> Enum.sort_by(& &1.order)
             |> Enum.map(& &1.text)
             |> Search.FragmentationScheme.recombine()
 

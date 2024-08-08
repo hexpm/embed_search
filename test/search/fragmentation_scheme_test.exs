@@ -33,6 +33,15 @@ defmodule Search.FragmentationSchemeTest do
              ]
     end
 
+    test "when splitting along whitespace, if there is too much trailing whitespace, splits in the middle of it" do
+      str = "word            other word"
+
+      assert FragmentationScheme.split(str, max_size: 15) == [
+        "word           ",
+        " other word"
+      ]
+    end
+
     test "when splitting along whitespace and the text starts with whitespace, the whitespace characters are prepended to the first fragment" do
       str = "    words and some more words"
 

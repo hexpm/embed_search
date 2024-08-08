@@ -37,9 +37,9 @@ defmodule Search.FragmentationSchemeTest do
       str = "word            other word"
 
       assert FragmentationScheme.split(str, max_size: 15) == [
-        "word           ",
-        " other word"
-      ]
+               "word           ",
+               " other word"
+             ]
     end
 
     test "when splitting along whitespace and the text starts with whitespace, the whitespace characters are prepended to the first fragment" do

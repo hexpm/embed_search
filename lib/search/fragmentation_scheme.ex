@@ -20,17 +20,17 @@ defmodule Search.FragmentationScheme do
       max_size ->
         text
         |> compute_splits({0, 0}, 0, max_size, [])
-        |> split_binary(0, text, [])
+        |> split_binary(text)
     end
   end
 
   def recombine(chunks), do: Enum.join(chunks)
 
-  defp split_binary([], _start_idx, _binary, acc), do: Enum.reverse(acc)
+  defp split_binary([], ""), do: []
 
-  defp split_binary([split_size | splits_tail], start_idx, binary, acc) do
-    current_part = binary_slice(binary, start_idx, split_size)
-    split_binary(splits_tail, start_idx + split_size, binary, [current_part | acc])
+  defp split_binary([split_size | splits_tail], string) do
+    <<chunk::binary-size(^split_size), rest::binary>> = string
+    [chunk | split_binary(splits_tail, rest)]
   end
 
   defp compute_splits("", {0, 0}, 0, _max_size, acc), do: Enum.reverse(acc)

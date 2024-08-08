@@ -14,60 +14,139 @@ defmodule Search.FragmentationScheme do
 
   def split(text, opts) when is_binary(text) do
     case Keyword.get(opts, :max_size) do
-      nil -> [text]
-      max_size -> do_split(text, [], max_size)
+      nil ->
+        [text]
+
+      max_size ->
+        text
+        |> compute_splits({0, 0}, 0, max_size, [])
+        |> split_binary(0, text, [])
     end
   end
 
   def recombine(chunks), do: Enum.join(chunks)
 
-  defp do_split("", acc, _max_size), do: Enum.reverse(acc)
+  defp split_binary([], _start_idx, _binary, acc), do: Enum.reverse(acc)
 
-  defp do_split(text, acc, max_size) do
-    # capture the next word along with trailing whitespace and leading whitespace, if any
-    [next_word] =
-      Regex.run(~r/^([\s]*[^\s]+\s+)[^\s]*/, text, capture: :all_but_first) ||
-        [text]
+  defp split_binary([split_size | splits_tail], start_idx, binary, acc) do
+    current_part = binary_slice(binary, start_idx, split_size)
+    split_binary(splits_tail, start_idx + split_size, binary, [current_part | acc])
+  end
 
-    word_chunks =
-      if byte_size(next_word) > max_size do
-        split_word("", next_word, [], max_size)
-      else
-        [next_word]
-      end
+  defp compute_splits("", {0, 0}, 0, _max_size, acc), do: Enum.reverse(acc)
 
-    next_text = binary_slice(text, byte_size(next_word)..-1//1)
-
-    case {word_chunks, acc} do
-      {_, []} ->
-        do_split(next_text, word_chunks, max_size)
-
-      {[single_word], [acc_head | acc_tail]} ->
-        # we can try extending the last word in accumulator
-        if byte_size(acc_head) + byte_size(single_word) <= max_size do
-          do_split(next_text, [acc_head <> single_word | acc_tail], max_size)
-        else
-          do_split(next_text, [single_word | acc], max_size)
-        end
-
-      _ ->
-        # the word had to be split into chunks; there is no need to extend the last word in accumulator
-        do_split(next_text, word_chunks ++ acc, max_size)
+  defp compute_splits("", {chunk_size, trailing_whitespace}, next_word, max_size, acc) do
+    if chunk_size + trailing_whitespace + next_word <= max_size do
+      compute_splits("", {0, 0}, 0, max_size, [chunk_size + trailing_whitespace + next_word | acc])
+    else
+      compute_splits("", {0, 0}, 0, max_size, [next_word, chunk_size + trailing_whitespace | acc])
     end
   end
 
-  defp split_word("", "", acc, _max_size), do: acc
-  defp split_word(chunk, "", acc, _max_size), do: [chunk | acc]
+  defp compute_splits(
+         text,
+         {current_chunk_size, trailing_whitespace_size},
+         next_word_size,
+         max_size,
+         acc
+       ) do
+    {graph, text} = String.next_grapheme(text)
+    graph_size = byte_size(graph)
+    whole_chunk_size = current_chunk_size + trailing_whitespace_size
 
-  defp split_word(current_chunk, word_rest, acc, max_size) do
-    {next_graph, word_rest} = String.next_grapheme(word_rest)
+    if graph =~ ~r/\s/ do
+      # graph is whitespace
+      if next_word_size == 0 do
+        # we are still building the current chunk
+        if whole_chunk_size + graph_size <= max_size do
+          # we can append the whitespace graph to the current chunk
+          compute_splits(
+            text,
+            {current_chunk_size, trailing_whitespace_size + graph_size},
+            0,
+            max_size,
+            acc
+          )
+        else
+          # we have to push the current chunk to the accumulator and start building the next one
+          compute_splits(text, {0, graph_size}, 0, max_size, [whole_chunk_size | acc])
+        end
+      else
+        # we are currently building a possible extension to the current chunk
+        cond do
+          whole_chunk_size + next_word_size + graph_size <= max_size ->
+            # both the next word and the whitespace grapheme after it can fit within the max_size
+            compute_splits(
+              text,
+              {
+                whole_chunk_size + next_word_size,
+                graph_size
+              },
+              0,
+              max_size,
+              acc
+            )
 
-    if byte_size(current_chunk) + byte_size(next_graph) <= max_size do
-      # we can continue building the current chunk of the word
-      split_word(current_chunk <> next_graph, word_rest, acc, max_size)
+          whole_chunk_size + next_word_size <= max_size ->
+            # the next word can fit, but the whitespace grapheme after it cannot - the whitespace becomes the trailing
+            # whitespace of the next chunk
+            compute_splits(
+              text,
+              {0, graph_size},
+              0,
+              max_size,
+              [whole_chunk_size + next_word_size | acc]
+            )
+
+          true ->
+            # current chunk cannot be extended, the next word becomes the current word
+            compute_splits(text, {next_word_size, graph_size}, 0, max_size, [
+              whole_chunk_size | acc
+            ])
+        end
+      end
     else
-      # the next grapheme would bring the chunk over the max size, push to accumulator
-      split_word(next_graph, word_rest, [current_chunk | acc], max_size)
+      # graph is not whitespace
+      if next_word_size == 0 do
+        # we are building the current chunk
+        cond do
+          trailing_whitespace_size == 0 && current_chunk_size + graph_size <= max_size ->
+            # we are building the current word, so we append the grapheme to the word being built
+            compute_splits(text, {current_chunk_size + graph_size, 0}, 0, max_size, acc)
+
+          whole_chunk_size + graph_size <= max_size ->
+            # the current word ended with whitespace, so we start building the next word candidate for extension
+            compute_splits(
+              text,
+              {current_chunk_size, trailing_whitespace_size},
+              graph_size,
+              max_size,
+              acc
+            )
+
+          true ->
+            # the current word either has to be sliced in half, or the current chunk ends with whitespace,
+            # so we can just push the current chunk onto the accumulator
+            compute_splits(text, {graph_size, 0}, 0, max_size, [whole_chunk_size | acc])
+        end
+      else
+        # we are building the next word candidate
+        if whole_chunk_size + next_word_size + graph_size <= max_size do
+          # we can continue building the next word
+          compute_splits(
+            text,
+            {current_chunk_size, trailing_whitespace_size},
+            next_word_size + graph_size,
+            max_size,
+            acc
+          )
+        else
+          # the next word is too long to extend the current chunk
+          compute_splits(text, {next_word_size + graph_size, 0}, 0, max_size, [
+            whole_chunk_size | acc
+          ])
+        end
+      end
     end
   end
 end

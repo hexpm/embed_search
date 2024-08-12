@@ -24,9 +24,8 @@ defmodule Search.PackagesFixtures do
 
     for i <- 1..num_items do
       Search.Repo.insert!(%Search.Packages.DocItem{
-        title: "Module doc title",
+        title: "Module doc title #{i}",
         ref: "Test ref",
-        doc: "Text #{i}",
         type: "module",
         package: package
       })
@@ -34,11 +33,13 @@ defmodule Search.PackagesFixtures do
   end
 
   def doc_fragments_fixture(num_fragments) do
-    items = doc_items_fixture(num_fragments)
+    items =
+      doc_items_fixture(num_fragments)
 
     for item <- items do
       Search.Repo.insert!(%Search.Packages.DocFragment{
-        text: "Preprocessed text: #{item.doc}",
+        text: "Preprocessed text for #{item.title}",
+        order: 0,
         doc_item: item
       })
     end

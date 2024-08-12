@@ -24,6 +24,9 @@ defmodule Search.FragmentationScheme do
     end
   end
 
+  @doc """
+  Recreates the original text from a list of chunks.
+  """
   def recombine(chunks), do: Enum.join(chunks)
 
   defp split_binary([], ""), do: []

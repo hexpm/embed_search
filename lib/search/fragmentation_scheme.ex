@@ -38,13 +38,7 @@ defmodule Search.FragmentationScheme do
 
   defp compute_splits("", _, size, _, sizes), do: Enum.reverse(sizes, [size])
 
-  defp compute_splits(
-         string,
-         max_size,
-         size,
-         size_until_word,
-         sizes
-       ) do
+  defp compute_splits(string, max_size, size, size_until_word, sizes) do
     {grapheme, string} = String.next_grapheme(string)
     grapheme_size = byte_size(grapheme)
 
